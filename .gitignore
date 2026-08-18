@@ -1,0 +1,14 @@
+﻿# Pastas de compilação (Não queremos isso no GitHub)
+bin/
+obj/
+.vs/
+
+# Arquivos de configurações de usuário
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Arquivos temporários
+*.log
+*.tmp
