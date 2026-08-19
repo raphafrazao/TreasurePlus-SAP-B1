@@ -125,6 +125,7 @@ namespace TreasurePlus
 
             // Bloqueando Nome do Credor
             this.UIAPIRawForm.Items.Item("NomePN").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
+            this.UIAPIRawForm.Items.Item("codePN").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
 
             // Bloqueando Códigos das Contas Contábeis 
             this.UIAPIRawForm.Items.Item("txtCcBanc").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
