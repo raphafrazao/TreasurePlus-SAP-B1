@@ -1,76 +1,76 @@
 ﻿using SAPbouiCOM.Framework;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace TreasurePlus
 {
     class Menu
     {
+        private const string MenuUid = "TreasurePlus_Folder";
+        private const string FormMenuUid = "TreasurePlus.Form1";
+
         public void AddMenuItems()
         {
-            SAPbouiCOM.Menus oMenus = null;
-            SAPbouiCOM.MenuItem oMenuItem = null;
-
-            oMenus = Application.SBO_Application.Menus;
-
-            SAPbouiCOM.MenuCreationParams oCreationPackage = null;
-            oCreationPackage = ((SAPbouiCOM.MenuCreationParams)(Application.SBO_Application.CreateObject(SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)));
-            oMenuItem = Application.SBO_Application.Menus.Item("43520"); // moudles'
-
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP;
-            oCreationPackage.UniqueID = "TreasurePlus";
-            oCreationPackage.String = "TreasurePlus";
-            oCreationPackage.Enabled = true;
-            oCreationPackage.Position = -1;
-
-            oMenus = oMenuItem.SubMenus;
+            string xmlMenu = RESOURCES.Resource.MenuAdd;
 
             try
             {
-                //  If the manu already exists this code will fail
-                oMenus.AddEx(oCreationPackage);
+                Application.SBO_Application.LoadBatchActions(xmlMenu);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-
-            }
-
-            try
-            {
-                // Get the menu collection of the newly added pop-up item
-                oMenuItem = Application.SBO_Application.Menus.Item("TreasurePlus");
-                oMenus = oMenuItem.SubMenus;
-
-                // Create s sub menu
-                oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING;
-                oCreationPackage.UniqueID = "TreasurePlus.Form1";
-                oCreationPackage.String = "Form1";
-                oMenus.AddEx(oCreationPackage);
-            }
-            catch (Exception er)
-            { //  Menu already exists
-                Application.SBO_Application.SetStatusBarMessage("Menu Already Exists", SAPbouiCOM.BoMessageTime.bmt_Short, true);
+                throw new InvalidOperationException(
+                    "Não foi possível criar os menus do TreasurePlus.",
+                    ex);
             }
         }
 
-        public void SBO_Application_MenuEvent(ref SAPbouiCOM.MenuEvent pVal, out bool BubbleEvent)
+        public void RemoverMenuSeExistir()
+        {
+            try
+            {
+                // Consulta o menu pelo UID.
+                Application.SBO_Application.Menus.Item(MenuUid);
+
+                // Se encontrou, remove a estrutura XML.
+                string xmlMenu = RESOURCES.Resource.MenuRemove;
+                Application.SBO_Application.LoadBatchActions(xmlMenu);
+            }
+            catch
+            {
+                // Neste método, a ausência do menu é considerada normal.
+                // Durante a implantação, registre o erro em arquivo se necessário.
+            }
+        }
+
+        public void SBO_Application_MenuEvent(
+            ref SAPbouiCOM.MenuEvent pVal,
+            out bool BubbleEvent)
         {
             BubbleEvent = true;
 
             try
             {
-                if (pVal.BeforeAction && pVal.MenuUID == "TreasurePlus.Form1")
-                {
-                    Form1 activeForm = new Form1();
-                    activeForm.Show();
-                }
+                // O formulário deve ser aberto após o SAP concluir a ação do menu.
+                if (pVal.BeforeAction)
+                    return;
+
+                // O clique ocorre no último item da árvore, não na pasta-pai.
+                if (pVal.MenuUID != FormMenuUid)
+                    return;
+
+                var activeForm = new Form1();
+                activeForm.Show();
             }
             catch (Exception ex)
             {
-                Application.SBO_Application.MessageBox(ex.ToString(), 1, "Ok", "", "");
+                Application.SBO_Application.MessageBox(
+                    "Erro ao abrir a tela: " + ex.Message,
+                    1,
+                    "Ok",
+                    "",
+                    "");
             }
         }
-
     }
 }
+

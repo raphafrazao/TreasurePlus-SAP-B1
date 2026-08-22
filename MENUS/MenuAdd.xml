@@ -1,1 +1,16 @@
-﻿<?xml version="1.0" encoding="utf-8" ?> 
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Application>
+	<Menus>
+		<action type="add">
+			<!-- NÍVEL 1: Cria a Pasta Principal no Menu do SAP (Módulo) -->
+			<Menu Checked="0" Enabled="1" FatherUID="43520" Position="-1" String="TreasurePlus" Type="2" UniqueID="TreasurePlus_Folder" Image=""/>
+
+			<!-- NÍVEL 2: Cria a Subpasta dentro da TreasurePlus -->
+			<Menu Checked="0" Enabled="1" FatherUID="TreasurePlus_Folder" Position="-1" String="Contratos Empréstimos" Type="2" UniqueID="TreasurePlus_SubFolder" Image=""/>
+
+			<!-- NÍVEL 3: Cria o botão final dentro da Subpasta -->
+			<!-- Nota: O UniqueID continua como TreasurePlus.Form1 para o seu C# o reconhecer automaticamente! -->
+			<Menu Checked="0" Enabled="1" FatherUID="TreasurePlus_SubFolder" Position="-1" String="Lançar Contratos" Type="1" UniqueID="TreasurePlus.Form1" Image=""/>
+		</action>
+	</Menus>
+</Application>

@@ -22,8 +22,10 @@ namespace TreasurePlus
             this.EditText0.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText0_ChooseFromListAfter);
             this.EditText1 = ((SAPbouiCOM.EditText)(this.GetItem("NomePN").Specific));
             this.EditText1.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText1_ChooseFromListAfter);
-            //                  Chama o método que aplica o filtro de fornecedores nas lupas
+
+            // Chama o método que aplica o filtro de fornecedores nas lupas
             this.AplicarCondicoes();
+
             this.EditText2 = ((SAPbouiCOM.EditText)(this.GetItem("txtCcBanc").Specific));
             this.EditText2.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText2_ChooseFromListAfter);
             this.EditText3 = ((SAPbouiCOM.EditText)(this.GetItem("txtCcCP").Specific));
@@ -52,17 +54,29 @@ namespace TreasurePlus
             this.EditText18 = ((SAPbouiCOM.EditText)(this.GetItem("txtIOF").Specific));
             this.EditText19 = ((SAPbouiCOM.EditText)(this.GetItem("Parc").Specific));
             this.ComboBox0 = ((SAPbouiCOM.ComboBox)(this.GetItem("CB_METODO").Specific));
+
+            // Botão de Calcular Parcelas
             this.Button0 = ((SAPbouiCOM.Button)(this.GetItem("bt_Calc").Specific));
             this.Button0.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button0_ClickBefore);
+
             this.Grid2 = ((SAPbouiCOM.Grid)(this.GetItem("plan_calc").Specific));
+
+            // Botão Principal (Adicionar / Procurar)
             this.Button1 = ((SAPbouiCOM.Button)(this.GetItem("1").Specific));
             this.Button1.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button1_ClickBefore);
+
             this.EditText20 = ((SAPbouiCOM.EditText)(this.GetItem("txtContr").Specific));
             this.EditText20.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText20_ChooseFromListAfter);
+
+            // Botões de Navegação (Setinhas)
+            this.btnAnt = ((SAPbouiCOM.Button)(this.GetItem("btnAnt").Specific));
+            this.btnAnt.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.btnAnt_ClickBefore);
+
+            this.btnProx = ((SAPbouiCOM.Button)(this.GetItem("btnProx").Specific));
+            this.btnProx.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.btnProx_ClickBefore);
+
             this.OnCustomInitialize();
-
         }
-
         public override void OnInitializeFormEvents()
         {
         }
@@ -95,6 +109,9 @@ namespace TreasurePlus
         private SAPbouiCOM.ComboBox ComboBox0;
         private SAPbouiCOM.Button Button0;
         private SAPbouiCOM.Button Button1;
+        private SAPbouiCOM.EditText EditText20;
+        private SAPbouiCOM.Button btnAnt;
+        private SAPbouiCOM.Button btnProx;
 
 
         private void OnCustomInitialize()
@@ -109,6 +126,43 @@ namespace TreasurePlus
             // Aplica as regras de bloqueio que criámos (campos cinzas)
             this.BloquearCamposNoProcurar();
 
+            // -------------------------------------------------------------
+            // REGRAS DE VISIBILIDADE DAS SETAS DE NAVEGAÇÃO
+            // -------------------------------------------------------------
+
+            // 1. Esconder no Modo Adicionar (1)
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 1, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 1, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
+
+            // 2. Mostrar no Modo Procurar (2)
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 2, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 2, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+
+            // 3. Mostrar no Modo Visualização (4)
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+
+            // 4. Mostrar no Modo OK / Atualizar (8) <-- A MÁGICA ESTÁ AQUI!
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 8, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Visible, 8, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            // -------------------------------------------------------------
+            // REGRAS DE HABILITAÇÃO (MANTER OS BOTÕES ACESOS/CLICÁVEIS)
+            // -------------------------------------------------------------
+
+            // Manter acesos no Modo OK/Visualização (2)
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 2, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 2, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+
+            // Manter acesos no Modo Procurar (4)
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+
+            // Manter acesos no Modo OK / Atualizar (8)
+            this.UIAPIRawForm.Items.Item("btnAnt").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 8, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            this.UIAPIRawForm.Items.Item("btnProx").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 8, SAPbouiCOM.BoModeVisualBehavior.mvb_True);
+            // Força os botões a nascerem invisíveis na abertura da tela (Adicionar)
+            this.btnAnt.Item.Visible = false;
+            this.btnProx.Item.Visible = false;
         }
         private void BloquearCamposNoProcurar()
         {
@@ -580,7 +634,7 @@ namespace TreasurePlus
                             throw new Exception("Digite o número do contrato antes de clicar em Procurar.");
                         }
 
-                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Buscando contrato na base de dados. Por favor, aguarde...", SAPbouiCOM.BoMessageTime.bmt_Medium, false);
+                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Pronto!", SAPbouiCOM.BoMessageTime.bmt_Short, false);
 
                         this.UIAPIRawForm.Freeze(true);
 
@@ -678,6 +732,13 @@ namespace TreasurePlus
 
                         string queryGrid = $"SELECT U_InstNum AS 'Parcela', U_DueDate AS 'Vencimento', U_InstAmt AS 'Valor da Parcela', U_Interest AS 'Juros', U_Amort AS 'Amortização', U_Status AS 'Status', U_JE_Aprop AS 'LCM' FROM [@TP_LOAN_LINES] WHERE DocEntry = {docEntry} ORDER BY U_InstNum";
                         oDataTable.ExecuteQuery(queryGrid);
+                        // Pega o Grid da tela
+                        SAPbouiCOM.Grid oGrid = (SAPbouiCOM.Grid)this.GetItem("plan_calc").Specific;
+
+                        // Transforma a coluna "LCM" numa coluna do tipo Link
+                        SAPbouiCOM.EditTextColumn colLCM = (SAPbouiCOM.EditTextColumn)oGrid.Columns.Item("LCM");
+                        colLCM.LinkedObjectType = "30"; // 30 = Lançamento Contábil (LCM)
+
                         // 1. TIRA O CURSOR DA DATA E MANDA PARA O BOTÃO OK (Evita o erro 66000-23)
                         this.UIAPIRawForm.ActiveItem = "txtContr";
                         // Trava explicitamente as Datas, o Contrato e o Credor para ficarem cinzentos
@@ -699,9 +760,79 @@ namespace TreasurePlus
             }
         }
 
-        private SAPbouiCOM.EditText EditText20;
 
 
+        private void NavegarContrato(string direcao)
+        {
+            try
+            {
+                if (this.UIAPIRawForm.Mode != SAPbouiCOM.BoFormMode.fm_VIEW_MODE &&
+                    this.UIAPIRawForm.Mode != SAPbouiCOM.BoFormMode.fm_FIND_MODE) return;
+
+                string contratoAtual = ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value.Trim();
+
+                SAPbobsCOM.Company oCompany = TreasurePlus.CORE.CommomClass.oCompany ?? (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
+                SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+
+                string query = "";
+                // Truque do CAST para driblar a limitação do tipo ntext no SQL Server
+                string campoNvarchar = "CAST(U_NumContrato AS NVARCHAR(250))";
+
+                if (string.IsNullOrEmpty(contratoAtual))
+                {
+                    if (direcao == "PROXIMO")
+                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] ORDER BY {campoNvarchar} ASC";
+                    else if (direcao == "ANTERIOR")
+                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] ORDER BY {campoNvarchar} DESC";
+                }
+                else
+                {
+                    if (direcao == "PROXIMO")
+                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] WHERE {campoNvarchar} > '{contratoAtual}' ORDER BY {campoNvarchar} ASC";
+                    else if (direcao == "ANTERIOR")
+                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] WHERE {campoNvarchar} < '{contratoAtual}' ORDER BY {campoNvarchar} DESC";
+                }
+
+                oRec.DoQuery(query);
+
+                if (oRec.RecordCount > 0)
+                {
+                    string novoContrato = oRec.Fields.Item(0).Value.ToString();
+
+                    if (this.UIAPIRawForm.Mode != SAPbouiCOM.BoFormMode.fm_FIND_MODE)
+                    {
+                        this.UIAPIRawForm.Mode = SAPbouiCOM.BoFormMode.fm_FIND_MODE;
+                    }
+
+                    // Injeta o número na tela
+                    ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value = novoContrato;
+
+                    // Chama o seu método de busca maravilhosamente construído de forma direta!
+                    bool bubble = true;
+                    this.Button1_ClickBefore(null, null, out bubble);
+                }
+                else
+                {
+                    SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Não há contratos registados nesta direção.", SAPbouiCOM.BoMessageTime.bmt_Short, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Erro na navegação: " + ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, true);
+            }
+        }
+
+        private void btnAnt_ClickBefore(object sboObject, SAPbouiCOM.SBOItemEventArg pVal, out bool BubbleEvent)
+        {
+            BubbleEvent = true;
+            NavegarContrato("ANTERIOR");
+        }
+
+        private void btnProx_ClickBefore(object sboObject, SAPbouiCOM.SBOItemEventArg pVal, out bool BubbleEvent)
+        {
+            BubbleEvent = true;
+            NavegarContrato("PROXIMO");
+        }
     }
 
 }

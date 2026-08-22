@@ -61,8 +61,16 @@ namespace TreasurePlus.RESOURCES {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt; 
-        ///.
+        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot; ?&gt;
+        ///&lt;Application&gt;
+        ///	&lt;Menus&gt;
+        ///		&lt;action type=&quot;add&quot;&gt;
+        ///			&lt;!-- Cria a Pasta Principal no Menu (TreasurePlus) --&gt;
+        ///			&lt;Menu Checked=&quot;0&quot; Enabled=&quot;1&quot; FatherUID=&quot;43520&quot; Position=&quot;-1&quot; String=&quot;TreasurePlus&quot; Type=&quot;2&quot; UniqueID=&quot;TreasurePlus_Folder&quot; Image=&quot;&quot;/&gt;
+        ///
+        ///			&lt;!-- Cria o botão que vai abrir a nossa tela --&gt;
+        ///			&lt;Menu Checked=&quot;0&quot; Enabled=&quot;1&quot; FatherUID=&quot;TreasurePlus_Folder&quot; Position=&quot;-1&quot; String=&quot;Contrato de Financiamento&quot; Type=&quot;1&quot; UniqueID=&quot;TreasurePlus.Form1&quot; Image=&quot;&quot;/&gt;
+        ///		&lt;/ [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string MenuAdd {
             get {
