@@ -11,6 +11,11 @@
 			<!-- NÍVEL 3: Cria o botão final dentro da Subpasta -->
 			<!-- Nota: O UniqueID continua como TreasurePlus.Form1 para o seu C# o reconhecer automaticamente! -->
 			<Menu Checked="0" Enabled="1" FatherUID="TreasurePlus_SubFolder" Position="-1" String="Lançar Contratos" Type="1" UniqueID="TreasurePlus.Form1" Image=""/>
+
+			<!-- NÍVEL 3 : Botão para a Tela de Baixa de Empréstimo -->
+			<Menu Checked="0" Enabled="1" FatherUID="TreasurePlus_SubFolder" Position="-1" String="Baixa de Empréstimo" Type="1" UniqueID="TreasurePlus.FormPgto" Image=""/>
+			
+			
 		</action>
 	</Menus>
 </Application>

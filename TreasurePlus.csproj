@@ -48,12 +48,18 @@
   <ItemGroup>
     <Compile Include="BUSSINES\CalculadoraEmprestimo.cs" />
     <Compile Include="BUSSINES\ContratoBusiness.cs" />
+    <Compile Include="FORMS\FormBaixaPgto.b1f.cs">
+      <DependentUpon>FormBaixaPgto.b1f</DependentUpon>
+    </Compile>
     <Compile Include="RESOURCES\Resource.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
     <None Include=".gitignore" />
+    <None Include="FORMS\FormBaixaPgto.b1f">
+      <FormCategory>UserForm</FormCategory>
+    </None>
     <None Include="FORMS\FormFinanciamento.b1f">
       <FormCategory>UserForm</FormCategory>
     </None>

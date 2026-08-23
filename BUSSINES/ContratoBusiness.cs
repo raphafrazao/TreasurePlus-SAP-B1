@@ -175,5 +175,39 @@ namespace TreasurePlus.Business
 
             oGeneralService.Add(oGeneralData);
         }
+
+        // Adicione este método na sua classe ContratoBusiness
+        public string ObterQueryPendenciasContabeis(string credorPN, string contratoExterno, List<string> parcelasSelecionadas)
+        {
+            if (parcelasSelecionadas == null || parcelasSelecionadas.Count == 0)
+                throw new Exception("Nenhuma parcela selecionada para busca.");
+
+            // Formata os números das parcelas para o SQL (ex: '1','2','3')
+            string parcelasFiltroSql = "'" + string.Join("','", parcelasSelecionadas) + "'";
+
+            // A MEGA QUERY CONTÁBIL (Ref1 = Contrato | Ref2 = Parcela | Ref3 = Contrato TreasurePlus)
+            string queryContab = $@"
+                SELECT 
+                    'Y' AS 'Baixar', /* Nasce flegado por padrão */
+                    T0.TransId AS 'Nº LCM', 
+                    T1.Line_ID AS 'Linha',
+                    T1.ShortName AS 'Credor', 
+                    T1.Ref1 AS 'Ref. 1 (Contrato)', 
+                    T1.Ref2 AS 'Ref. 2 (Parcela)', 
+                    T1.Ref3Line AS 'Ref. 3 (Origem)',
+                    T1.DueDate AS 'Vencimento', 
+                    T1.Credit AS 'Valor Original (Crédito)',
+                    T1.BalDueCred AS 'Saldo a Pagar'
+                FROM OJDT T0
+                INNER JOIN JDT1 T1 ON T0.TransId = T1.TransId
+                WHERE T1.ShortName = '{credorPN}'
+                  AND T1.Ref1 = '{contratoExterno}'
+                  AND T1.Ref2 IN ({parcelasFiltroSql})
+                  AND T1.Ref3Line = 'Contrato TreasurePlus'
+                  AND T1.BalDueCred > 0 /* Traz apenas o que ainda não foi pago/reconciliado */
+                ORDER BY T1.Ref2";
+
+            return queryContab;
+        }
     }
 }

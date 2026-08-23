@@ -8,9 +8,9 @@ using TreasurePlus.Business;
 namespace TreasurePlus
 {
     [Form("TreasurePlus.Form1", "FORMS/FormFinanciamento.b1f")]
-    class Form1 : UserFormBase
+    class FormContrato : UserFormBase
     {
-        public Form1()
+        public FormContrato()
         {
         }
 
