@@ -52,10 +52,10 @@ namespace TreasurePlus
                         activeForm.Show();
                         break;
 
+                    
                     case FormPgtoMenuUid:
-                        // Chama a classe da tela nova. 
-                        // Nota: Se você não mudou o nome da classe, use: new TreasurePlus.FORMS.Form1()
-                        var formBaixa = new TreasurePlus.FormPgto();
+                        // Use o novo nome da classe que o B1 Studio gerou!
+                        var formBaixa = new FormPgto();
                         formBaixa.Show();
                         break;
                 }

@@ -62,6 +62,7 @@
     </None>
     <None Include="FORMS\FormFinanciamento.b1f">
       <FormCategory>UserForm</FormCategory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="CORE\CommomClass.cs" />
     <Compile Include="FORMS\FormFinanciamento.b1f.cs">
