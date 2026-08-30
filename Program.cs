@@ -1,6 +1,7 @@
 ﻿using SAPbouiCOM.Framework;
 using System;
 
+
 namespace TreasurePlus
 {
     class Program
@@ -25,6 +26,22 @@ namespace TreasurePlus
                 // Cria a versão atual do menu.
                 menuManager.AddMenuItems();
 
+                // ====================================================================
+                // ROTINA DE INSTALAÇÃO DO ADD-ON (CRIAÇÃO DE TABELAS E CAMPOS)
+                // ====================================================================
+                Application.SBO_Application.StatusBar.SetText(
+                    "TreasurePlus: Verificando estrutura no banco de dados...",
+                    SAPbouiCOM.BoMessageTime.bmt_Short,
+                    SAPbouiCOM.BoStatusBarMessageType.smt_Warning);
+
+                // Resgata a conexão da DI API (Company) a partir da UI API
+                SAPbobsCOM.Company oCompany = (SAPbobsCOM.Company)Application.SBO_Application.Company.GetDICompany();
+
+                // Chama a classe mágica que criamos
+                SetupMetadados setup = new SetupMetadados(oCompany);
+                setup.InstalarEstruturaTreasurePlus();
+                // ====================================================================
+
                 // Registra o evento de clique dos menus.
                 oApp.RegisterMenuEventHandler(
                     menuManager.SBO_Application_MenuEvent);
@@ -35,7 +52,7 @@ namespace TreasurePlus
                         SBO_Application_AppEvent);
 
                 Application.SBO_Application.StatusBar.SetText(
-                    "TreasurePlus conectado com sucesso.",
+                    "TreasurePlus conectado e atualizado com sucesso.",
                     SAPbouiCOM.BoMessageTime.bmt_Short,
                     SAPbouiCOM.BoStatusBarMessageType.smt_Success);
 

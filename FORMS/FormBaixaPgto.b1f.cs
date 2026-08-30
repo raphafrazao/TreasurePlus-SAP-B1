@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SAPbobsCOM;
+using TreasurePlus.CORE;
 
 namespace TreasurePlus
 {
@@ -27,6 +29,21 @@ namespace TreasurePlus
         private SAPbouiCOM.EditText EditText4;
         private SAPbouiCOM.StaticText StaticText3;
 
+        // ==============================================================
+        // PORTEIRO DA DI API (CENTRALIZADOR DE CONEXÃO)
+        // ==============================================================
+        private SAPbobsCOM.Company ConexaoSAP
+        {
+            get
+            {
+                if (TreasurePlus.CORE.CommomClass.oCompany == null)
+                {
+                    TreasurePlus.CORE.CommomClass.oCompany = (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
+                }
+                return TreasurePlus.CORE.CommomClass.oCompany;
+            }
+        }
+
         private string _docEntry; //captura o docentry do contrato!
 
         public override void OnInitializeComponent()
@@ -38,12 +55,12 @@ namespace TreasurePlus
             this.EditText1 = ((SAPbouiCOM.EditText)(this.GetItem("NamePN").Specific));
             this.EditText2 = ((SAPbouiCOM.EditText)(this.GetItem("StatusCont").Specific));
             this.EditText3 = ((SAPbouiCOM.EditText)(this.GetItem("CodePN").Specific));
-            //           Apague as linhas do Grid0 e Grid1 e coloque isto:
+            //            Apague as linhas do Grid0 e Grid1 e coloque isto:
             this.Grid3 = ((SAPbouiCOM.Grid)(this.GetItem("GridParc").Specific));
             this.Grid3.ClickBefore += new SAPbouiCOM._IGridEvents_ClickBeforeEventHandler(this.Grid3_ClickBefore);
             this.Button0 = ((SAPbouiCOM.Button)(this.GetItem("btnBuscarP").Specific));
             this.Button0.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button0_ClickBefore);
-            //     Mapeia o Segundo Grid (Contabilidade Real)
+            //      Mapeia o Segundo Grid (Contabilidade Real)
             this.Grid0 = ((SAPbouiCOM.Grid)(this.GetItem("GridContab").Specific));
             this.Grid0.ClickAfter += new SAPbouiCOM._IGridEvents_ClickAfterEventHandler(this.Grid0_ClickAfter);
             this.Grid0.ValidateAfter += new SAPbouiCOM._IGridEvents_ValidateAfterEventHandler(this.Grid0_ValidateAfter);
@@ -53,6 +70,7 @@ namespace TreasurePlus
             this.EditText5 = ((SAPbouiCOM.EditText)(this.GetItem("txtDataPgt").Specific));
             this.Button1 = ((SAPbouiCOM.Button)(this.GetItem("btnBaixar").Specific));
             this.Button1.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button1_ClickBefore);
+            this.ComboBox0 = ((SAPbouiCOM.ComboBox)(this.GetItem("Item_4").Specific));
             this.OnCustomInitialize();
 
         }
@@ -122,17 +140,14 @@ namespace TreasurePlus
                 else
                     statusDescricao = statusCode; // fallback caso seja outro
 
+               
                 // 3. Busca o Nome do Parceiro de Negócios (OCRD) usando o DI API (Recordset)
                 string nomePN = "";
 
-                // Verifica e preenche a CommonClass se estiver vazia (igual fizemos no Form1)
-                if (TreasurePlus.CORE.CommomClass.oCompany == null)
-                {
-                    TreasurePlus.CORE.CommomClass.oCompany = (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
-                }
-
-                SAPbobsCOM.Company oCompany = TreasurePlus.CORE.CommomClass.oCompany;
+                SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
                 SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+
+                
 
                 if (!string.IsNullOrEmpty(codePN))
                 {
@@ -184,23 +199,45 @@ namespace TreasurePlus
                 {
                     dtParcelas = this.UIAPIRawForm.DataSources.DataTables.Add("DT_PARC");
                 }
+                string query = "";
 
-                // 2. A Query mágica (Buscamos apenas as parcelas em aberto na tabela filha)
-                // Nota: Assumi que o status de aberto na linha é 'A'. Ajuste se for 'O', '1', etc.
-                string query = $@"
+                SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- CHAMA A CONEXÃO AQUI!
+
+                if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
+                {
+                    query = $@"
                     SELECT 
-                        'N' AS 'Selecionar',  /* <-- COLUNA FAKE PARA A CHECKBOX */
-                        U_InstNum AS 'Parcela', 
-                        U_DueDate AS 'Vencimento', 
-                        U_InstAmt AS 'Valor da Parcela', 
-                        U_Interest AS 'Juros', 
-                        U_Amort AS 'Amortização',
-                        U_Status AS 'Status',
-                        U_JE_Aprop AS 'LCM Inicial'
+                        'N' AS ""Selecionar"",  /* <-- O valor 'N' continua em aspas simples, o apelido em duplas */
+                        ""U_InstNum"" AS ""Parcela"", 
+                        ""U_DueDate"" AS ""Vencimento"", 
+                        ""U_InstAmt"" AS ""Valor da Parcela"", 
+                        ""U_Interest"" AS ""Juros"", 
+                        ""U_Amort"" AS ""Amortização"",
+                        ""U_Status"" AS ""Status"",
+                        ""U_JE_Aprop"" AS ""LCM Inicial""
+                    FROM ""@TP_LOAN_LINES"" 
+                    WHERE ""DocEntry"" = {docEntry} 
+                      
+                    ORDER BY ""U_InstNum""";
+
+                }
+                else // Se cair aqui, é SQL Server
+                {
+                    query = $@"
+                    SELECT 
+                        'N' AS [Selecionar],  /* <-- COLUNA FAKE PARA A CHECKBOX */
+                        U_InstNum AS [Parcela], 
+                        U_DueDate AS [Vencimento], 
+                        U_InstAmt AS [Valor da Parcela], 
+                        U_Interest AS [Juros], 
+                        U_Amort AS [Amortização],
+                        U_Status AS [Status],
+                        U_JE_Aprop AS [LCM Inicial]
                     FROM [@TP_LOAN_LINES] 
                     WHERE DocEntry = {docEntry} 
                       
                     ORDER BY U_InstNum";
+                }
 
                 // 3. Executa a query diretamente na DataTable
                 dtParcelas.ExecuteQuery(query);
@@ -564,10 +601,23 @@ namespace TreasurePlus
 
                 string credorPN = ((SAPbouiCOM.EditText)this.GetItem("CodePN").Specific).Value.Trim();
 
-                SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)TreasurePlus.CORE.CommomClass.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
-
+               SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
+                SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
                 // NOVA QUERY SUPER RÁPIDA: Buscando por DocEntry (Chave Primária) em vez do U_NumContrato
-                oRec.DoQuery($"SELECT U_BankAcc, U_IntExpAcc, U_SIntAcc FROM [@TP_LOAN] WHERE DocEntry = {_docEntry}");
+                string queryContas = "";
+
+                if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
+                {
+                    // HANA: Aspas duplas nas colunas e na tabela
+                    queryContas = $"SELECT \"U_BankAcc\", \"U_IntExpAcc\", \"U_SIntAcc\" FROM \"@TP_LOAN\" WHERE \"DocEntry\" = {_docEntry}";
+                }
+                else
+                {
+                    // SQL SERVER: Colchetes apenas na tabela com @
+                    queryContas = $"SELECT U_BankAcc, U_IntExpAcc, U_SIntAcc FROM [@TP_LOAN] WHERE DocEntry = {_docEntry}";
+                }
+
+                oRec.DoQuery(queryContas);
 
                 if (oRec.RecordCount == 0) throw new Exception("Contrato não encontrado para resgatar contas contábeis.");
 
@@ -611,5 +661,7 @@ namespace TreasurePlus
             }
 
         }
+
+        private SAPbouiCOM.ComboBox ComboBox0;
     }
 }

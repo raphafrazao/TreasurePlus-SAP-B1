@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Xml;
 using CalcularEmpréstimo;
 using TreasurePlus.Business;
+using SAPbobsCOM;
+using TreasurePlus.CORE;
 
 namespace TreasurePlus
 {
@@ -22,10 +24,8 @@ namespace TreasurePlus
             this.EditText0.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText0_ChooseFromListAfter);
             this.EditText1 = ((SAPbouiCOM.EditText)(this.GetItem("NomePN").Specific));
             this.EditText1.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText1_ChooseFromListAfter);
-
-            // Chama o método que aplica o filtro de fornecedores nas lupas
+            //      Chama o método que aplica o filtro de fornecedores nas lupas
             this.AplicarCondicoes();
-
             this.EditText2 = ((SAPbouiCOM.EditText)(this.GetItem("txtCcBanc").Specific));
             this.EditText2.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText2_ChooseFromListAfter);
             this.EditText3 = ((SAPbouiCOM.EditText)(this.GetItem("txtCcCP").Specific));
@@ -54,28 +54,28 @@ namespace TreasurePlus
             this.EditText18 = ((SAPbouiCOM.EditText)(this.GetItem("txtIOF").Specific));
             this.EditText19 = ((SAPbouiCOM.EditText)(this.GetItem("Parc").Specific));
             this.ComboBox0 = ((SAPbouiCOM.ComboBox)(this.GetItem("CB_METODO").Specific));
-
-            // Botão de Calcular Parcelas
+            //      Botão de Calcular Parcelas
             this.Button0 = ((SAPbouiCOM.Button)(this.GetItem("bt_Calc").Specific));
             this.Button0.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button0_ClickBefore);
-
             this.Grid2 = ((SAPbouiCOM.Grid)(this.GetItem("plan_calc").Specific));
-
-            // Botão Principal (Adicionar / Procurar)
+            //      Botão Principal (Adicionar / Procurar)
             this.Button1 = ((SAPbouiCOM.Button)(this.GetItem("1").Specific));
             this.Button1.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button1_ClickBefore);
-
             this.EditText20 = ((SAPbouiCOM.EditText)(this.GetItem("txtContr").Specific));
             this.EditText20.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText20_ChooseFromListAfter);
-
-            // Botões de Navegação (Setinhas)
+            //      Botões de Navegação (Setinhas)
             this.btnAnt = ((SAPbouiCOM.Button)(this.GetItem("btnAnt").Specific));
             this.btnAnt.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.btnAnt_ClickBefore);
-
             this.btnProx = ((SAPbouiCOM.Button)(this.GetItem("btnProx").Specific));
             this.btnProx.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.btnProx_ClickBefore);
-
+            this.StaticText4 = ((SAPbouiCOM.StaticText)(this.GetItem("Item_3").Specific));
+            this.EditText21 = ((SAPbouiCOM.EditText)(this.GetItem("txtFilial").Specific));
+            this.EditText21.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText21_ChooseFromListAfter);
+            this.StaticText5 = ((SAPbouiCOM.StaticText)(this.GetItem("Item_5").Specific));
+            this.EditText22 = ((SAPbouiCOM.EditText)(this.GetItem("despMulta").Specific));
+            this.EditText22.ChooseFromListAfter += new SAPbouiCOM._IEditTextEvents_ChooseFromListAfterEventHandler(this.EditText22_ChooseFromListAfter);
             this.OnCustomInitialize();
+
         }
         public override void OnInitializeFormEvents()
         {
@@ -112,6 +112,31 @@ namespace TreasurePlus
         private SAPbouiCOM.EditText EditText20;
         private SAPbouiCOM.Button btnAnt;
         private SAPbouiCOM.Button btnProx;
+        private SAPbouiCOM.EditText EditText23;
+        private SAPbouiCOM.StaticText StaticText4;
+        private SAPbouiCOM.EditText EditText21;
+        private SAPbouiCOM.StaticText StaticText5;
+        private SAPbouiCOM.EditText EditText22;
+
+
+        // ==============================================================
+        // PORTEIRO DA DI API (CENTRALIZADOR DE CONEXÃO)
+        // ==============================================================
+        private SAPbobsCOM.Company ConexaoSAP
+        {
+            get
+            {
+                // Se a variável global estiver vazia, ele busca a conexão no SAP
+                if (TreasurePlus.CORE.CommomClass.oCompany == null)
+                {
+                    TreasurePlus.CORE.CommomClass.oCompany = (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
+                }
+                // Retorna a conexão viva e pronta para uso
+                return TreasurePlus.CORE.CommomClass.oCompany;
+            }
+        }
+
+
 
 
         private void OnCustomInitialize()
@@ -201,6 +226,29 @@ namespace TreasurePlus
         }
 
         #region MÉTODO DAS LUPAS 
+
+        // --- MÉTODO 0: LUPA DO CÓDIGO ---FILIAL ATIVA
+
+        
+        private void EditText21_ChooseFromListAfter(object sboObject, SAPbouiCOM.SBOItemEventArg pVal)
+        {
+            SAPbouiCOM.ISBOChooseFromListEventArg oCFLEvento = null;
+            oCFLEvento = (SAPbouiCOM.ISBOChooseFromListEventArg)pVal;
+
+            SAPbouiCOM.DataTable oDataTable = null;
+            oDataTable = oCFLEvento.SelectedObjects;
+
+            if (oDataTable == null)
+                return;
+
+            var codigofILIAL = oDataTable.GetValue("BPLId", 0).ToString();
+            var nome = oDataTable.GetValue("BPLName", 0).ToString();
+
+            this.UIAPIRawForm.DataSources.UserDataSources.Item("udsFilial").ValueEx = nome;
+
+
+        }
+
 
         // --- MÉTODO 1: LUPA DO CÓDIGO ---
         private void EditText0_ChooseFromListAfter(object sboObject, SAPbouiCOM.SBOItemEventArg pVal)
@@ -375,7 +423,7 @@ namespace TreasurePlus
 
         }
 
-        // -- MÉTODO  LUPA CONTA Despesas com IOF
+       
         private void EditText6_ChooseFromListAfter(object sboObject, SAPbouiCOM.SBOItemEventArg pVal)
         {
             SAPbouiCOM.ISBOChooseFromListEventArg oCFLEvento = null;
@@ -410,6 +458,28 @@ namespace TreasurePlus
             }
             catch { }
         }
+
+        // -- MÉTODO  LUPA CONTA Multa e Juros por Atraso 
+        private void EditText22_ChooseFromListAfter(object sboObject, SAPbouiCOM.SBOItemEventArg pVal)
+        {
+            SAPbouiCOM.ISBOChooseFromListEventArg oCFLEvento = null;
+            oCFLEvento = (SAPbouiCOM.ISBOChooseFromListEventArg)pVal;
+
+            SAPbouiCOM.DataTable oDataTable = null;
+            oDataTable = oCFLEvento.SelectedObjects;
+
+            if (oDataTable == null)
+                return;
+
+            var conta = oDataTable.GetValue("AcctCode", 0).ToString();
+            var nome = oDataTable.GetValue("AcctName", 0).ToString();
+
+
+            this.UIAPIRawForm.DataSources.UserDataSources.Item("udMulta").ValueEx = conta;
+            this.UIAPIRawForm.DataSources.UserDataSources.Item("UD_Multa").ValueEx = nome;
+
+        }
+
 
 
         private void AplicarCondicoes()
@@ -452,6 +522,22 @@ namespace TreasurePlus
                 this.UIAPIRawForm.ChooseFromLists.Item("CFL_JLP").SetConditions(oConsConta);
                 this.UIAPIRawForm.ChooseFromLists.Item("CFL_JCP").SetConditions(oConsConta);
                 this.UIAPIRawForm.ChooseFromLists.Item("CFL_CC").SetConditions(oConsConta);
+                this.UIAPIRawForm.ChooseFromLists.Item("CFL_Multa").SetConditions(oConsConta);
+
+                // ========================================================
+                // 3. FILTRO DE FILIAIS ATIVAS 
+                // ========================================================
+
+                SAPbouiCOM.Conditions oConsFilial = this.UIAPIRawForm.ChooseFromLists.Item("CFL_Filial").GetConditions();
+                SAPbouiCOM.Condition oConFilial = oConsFilial.Add();
+
+                oConFilial.Alias = "Disabled";
+                oConFilial.Operation = SAPbouiCOM.BoConditionOperation.co_EQUAL;
+                oConFilial.CondVal = "N";
+
+                this.UIAPIRawForm.ChooseFromLists.Item("CFL_Filial").SetConditions(oConsFilial);
+
+
 
             }
             catch (Exception ex)
@@ -530,235 +616,279 @@ namespace TreasurePlus
 
         private void Button1_ClickBefore(object sboObject, SAPbouiCOM.SBOItemEventArg pVal, out bool BubbleEvent)
         {
+
             BubbleEvent = true;
+
+            #region MODO ADICIONAR DA TELA 
+            if (this.UIAPIRawForm.Mode == SAPbouiCOM.BoFormMode.fm_ADD_MODE)
+            {
+
+                SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
+
+
+
+                try
+                {
+                    SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Processando contrato e gerando Lançamento Contábil. Por favor, aguarde...", SAPbouiCOM.BoMessageTime.bmt_Medium, false);
+                    if (!oCompany.InTransaction) oCompany.StartTransaction();
+
+                    // Ajustado para os nomes exatos do seu XML!
+                    string contratoId = ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value.Trim();
+                    string codePN = ((SAPbouiCOM.EditText)this.GetItem("codePN").Specific).Value.Trim();
+                    double vpl = Convert.ToDouble(((SAPbouiCOM.EditText)this.GetItem("VPL").Specific).Value.Replace(".", ","));
+                    double valorIof = Convert.ToDouble(((SAPbouiCOM.EditText)this.GetItem("txtIOF").Specific).Value.Replace(".", ","));
+                    DateTime dtIni = DateTime.ParseExact(((SAPbouiCOM.EditText)this.GetItem("txtDtIni").Specific).Value, "yyyyMMdd", null);
+                    DateTime dtFim = DateTime.ParseExact(((SAPbouiCOM.EditText)this.GetItem("txtDtFim").Specific).Value, "yyyyMMdd", null);
+
+                    double taxa = Convert.ToDouble(((SAPbouiCOM.EditText)this.GetItem("txtTaxa").Specific).Value.Replace(".", ","));
+                    int parcelas = Convert.ToInt32(((SAPbouiCOM.EditText)this.GetItem("Parc").Specific).Value);
+                    string metodo = ((SAPbouiCOM.ComboBox)this.GetItem("CB_METODO").Specific).Value;
+
+                    string contaDespJuros = this.UIAPIRawForm.DataSources.UserDataSources.Item("udDJ").Value;
+                    string contaBancaria = this.UIAPIRawForm.DataSources.UserDataSources.Item("udDCC").Value;
+                    string contaDespIof = this.UIAPIRawForm.DataSources.UserDataSources.Item("udDIOF").Value;
+                    string contaCp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udCP").Value;
+                    string contaLp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udLP").Value;
+                    string contaJurosCp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udJCP").Value;
+                    string contaJurosLp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udJLP").Value;
+
+                    //Novas Variáveis da Versão 1.0.0.1 
+
+
+
+                    SAPbouiCOM.DataTable oGridData = this.UIAPIRawForm.DataSources.DataTables.Item("DT_PROJ");
+                    if (oGridData.Rows.Count == 0) throw new Exception("Por favor, clique em 'Calcular' para gerar as parcelas ou informe antes de adicionar o contrato.");
+
+                    // 1.Instanciamos a sua classe de negócios
+                    ContratoBusiness negocioContrato = new ContratoBusiness();
+
+                    // 2. Chamamos a geração do LCM
+                    int transIdContabil = negocioContrato.GerarLancamentoContabilContrato(
+                        contratoId, codePN, vpl, valorIof, dtIni, dtFim,
+                        oGridData, contaBancaria, contaDespIof, contaCp, contaLp, contaJurosCp, contaJurosLp
+                    );
+
+                    // 3. Chamamos o salvamento do UDO
+                    negocioContrato.SalvarContratoNoUDO(
+                        contratoId, codePN, vpl, valorIof, taxa, parcelas, metodo, dtIni, dtFim,
+                        oGridData, transIdContabil, contaBancaria, contaCp, contaLp,
+                        contaJurosCp, contaJurosLp, contaDespJuros, contaDespIof
+                    );
+
+                    // -------------------------------------------------------------
+
+                    if (oCompany.InTransaction) oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                    this.UIAPIRawForm.Freeze(true);
+                    for (int i = 0; i < oGridData.Rows.Count; i++)
+                    {
+                        oGridData.SetValue("Status", i, "A");
+                        oGridData.SetValue("LCM", i, transIdContabil);
+                    }
+
+                    SAPbouiCOM.Grid oGridTela = (SAPbouiCOM.Grid)this.GetItem("plan_calc").Specific;
+                    oGridTela.Columns.Item("Status").Editable = false;
+                    oGridTela.Columns.Item("LCM").Editable = false;
+                    this.UIAPIRawForm.Freeze(false);
+
+                    BubbleEvent = false;
+                    SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Contrato e Lançamento Contábil (TransId: " + transIdContabil + ") gerados com sucesso!", SAPbouiCOM.BoMessageTime.bmt_Short, false);
+
+                    this.UIAPIRawForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE;
+                }
+                catch (Exception ex)
+                {
+                    if (oCompany.InTransaction) oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                    BubbleEvent = false;
+                    this.UIAPIRawForm.Freeze(false);
+                    SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Erro ao salvar contrato (Operação cancelada): " + ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, true);
+                }
+            }
+            #endregion
+
+            #region    MODO PROCURAR DA TELA 
+
+            else if (this.UIAPIRawForm.Mode == SAPbouiCOM.BoFormMode.fm_FIND_MODE)
             {
                 BubbleEvent = true;
-
-                #region MODO ADICIONAR DA TELA 
-                if (this.UIAPIRawForm.Mode == SAPbouiCOM.BoFormMode.fm_ADD_MODE)
+                try
                 {
-                    // VERIFICA E PREENCHE A COMMONCLASS SE ELA ESTIVER VAZIA:
-                    if (TreasurePlus.CORE.CommomClass.oCompany == null)
+                    string contratoId = ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value.Trim();
+
+                    if (string.IsNullOrEmpty(contratoId))
                     {
-                        TreasurePlus.CORE.CommomClass.oCompany = (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
+                        throw new Exception("Digite o número do contrato antes de clicar em Procurar.");
                     }
 
-                    SAPbobsCOM.Company oCompany = TreasurePlus.CORE.CommomClass.oCompany;
+                    SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Pronto!", SAPbouiCOM.BoMessageTime.bmt_Short, false);
 
-                    try
+                    this.UIAPIRawForm.Freeze(true);
+
+
+                    SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
+                    SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+
+                    string queryContrato = "";
+
+                    if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
                     {
-                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Processando contrato e gerando Lançamento Contábil. Por favor, aguarde...", SAPbouiCOM.BoMessageTime.bmt_Medium, false);
-                        if (!oCompany.InTransaction) oCompany.StartTransaction();
-
-                        // Ajustado para os nomes exatos do seu XML!
-                        string contratoId = ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value.Trim();
-                        string codePN = ((SAPbouiCOM.EditText)this.GetItem("codePN").Specific).Value.Trim();
-                        double vpl = Convert.ToDouble(((SAPbouiCOM.EditText)this.GetItem("VPL").Specific).Value.Replace(".", ","));
-                        double valorIof = Convert.ToDouble(((SAPbouiCOM.EditText)this.GetItem("txtIOF").Specific).Value.Replace(".", ","));
-                        DateTime dtIni = DateTime.ParseExact(((SAPbouiCOM.EditText)this.GetItem("txtDtIni").Specific).Value, "yyyyMMdd", null);
-                        DateTime dtFim = DateTime.ParseExact(((SAPbouiCOM.EditText)this.GetItem("txtDtFim").Specific).Value, "yyyyMMdd", null);
-
-                        double taxa = Convert.ToDouble(((SAPbouiCOM.EditText)this.GetItem("txtTaxa").Specific).Value.Replace(".", ","));
-                        int parcelas = Convert.ToInt32(((SAPbouiCOM.EditText)this.GetItem("Parc").Specific).Value);
-                        string metodo = ((SAPbouiCOM.ComboBox)this.GetItem("CB_METODO").Specific).Value;
-
-                        string contaDespJuros = this.UIAPIRawForm.DataSources.UserDataSources.Item("udDJ").Value;
-                        string contaBancaria = this.UIAPIRawForm.DataSources.UserDataSources.Item("udDCC").Value;
-                        string contaDespIof = this.UIAPIRawForm.DataSources.UserDataSources.Item("udDIOF").Value;
-                        string contaCp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udCP").Value;
-                        string contaLp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udLP").Value;
-                        string contaJurosCp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udJCP").Value;
-                        string contaJurosLp = this.UIAPIRawForm.DataSources.UserDataSources.Item("udJLP").Value;
-
-                        SAPbouiCOM.DataTable oGridData = this.UIAPIRawForm.DataSources.DataTables.Item("DT_PROJ");
-                        if (oGridData.Rows.Count == 0) throw new Exception("Por favor, clique em 'Calcular' para gerar as parcelas ou informe antes de adicionar o contrato.");
-
-                        // 1.Instanciamos a sua classe de negócios
-                        ContratoBusiness negocioContrato = new ContratoBusiness();
-
-                        // 2. Chamamos a geração do LCM
-                        int transIdContabil = negocioContrato.GerarLancamentoContabilContrato(
-                            contratoId, codePN, vpl, valorIof, dtIni, dtFim,
-                            oGridData, contaBancaria, contaDespIof, contaCp, contaLp, contaJurosCp, contaJurosLp
-                        );
-
-                        // 3. Chamamos o salvamento do UDO
-                        negocioContrato.SalvarContratoNoUDO(
-                            contratoId, codePN, vpl, valorIof, taxa, parcelas, metodo, dtIni, dtFim,
-                            oGridData, transIdContabil, contaBancaria, contaCp, contaLp,
-                            contaJurosCp, contaJurosLp, contaDespJuros, contaDespIof
-                        );
-
-                        // -------------------------------------------------------------
-
-                        if (oCompany.InTransaction) oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
-
-                        this.UIAPIRawForm.Freeze(true);
-                        for (int i = 0; i < oGridData.Rows.Count; i++)
-                        {
-                            oGridData.SetValue("Status", i, "A");
-                            oGridData.SetValue("LCM", i, transIdContabil);
-                        }
-
-                        SAPbouiCOM.Grid oGridTela = (SAPbouiCOM.Grid)this.GetItem("plan_calc").Specific;
-                        oGridTela.Columns.Item("Status").Editable = false;
-                        oGridTela.Columns.Item("LCM").Editable = false;
-                        this.UIAPIRawForm.Freeze(false);
-
-                        BubbleEvent = false;
-                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Contrato e Lançamento Contábil (TransId: " + transIdContabil + ") gerados com sucesso!", SAPbouiCOM.BoMessageTime.bmt_Short, false);
-
-                        this.UIAPIRawForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE;
+                        // HANA: Aspas duplas nas colunas/tabelas e tamanho fixo no NVARCHAR
+                        queryContrato = $"SELECT * FROM \"@TP_LOAN\" WHERE CAST(\"U_NumContrato\" AS NVARCHAR(254)) = '{contratoId}'";
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        if (oCompany.InTransaction) oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
-                        BubbleEvent = false;
-                        this.UIAPIRawForm.Freeze(false);
-                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Erro ao salvar contrato (Operação cancelada): " + ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, true);
+                        // SQL Server: Colchetes na tabela e NVARCHAR(MAX) original
+                        queryContrato = $"SELECT * FROM [@TP_LOAN] WHERE CAST(U_NumContrato AS NVARCHAR(MAX)) = '{contratoId}'";
                     }
+
+                    oRec.DoQuery(queryContrato);
+
+                    if (oRec.RecordCount == 0)
+                    {
+                        throw new Exception("Contrato não encontrado na base de dados.");
+                    }
+
+                    // --- PARCEIRO DE NEGÓCIOS ---
+                    string credorCode = oRec.Fields.Item("U_CreditorNumber").Value.ToString();
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("UDS_Credor").Value = credorCode;
+
+                    SAPbobsCOM.Recordset recPN = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+                    string queryPN = "";
+
+                    if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
+                    {
+                        // HANA: Aspas duplas nas tabelas e colunas nativas
+                        queryPN = $"SELECT \"CardName\" FROM \"OCRD\" WHERE \"CardCode\" = '{credorCode}'";
+                    }
+                    else
+                    {
+                        // SQL Server: Escrita normal para tabelas nativas
+                        queryPN = $"SELECT CardName FROM OCRD WHERE CardCode = '{credorCode}'";
+                    }
+
+                    recPN.DoQuery(queryPN);
+
+                    if (recPN.RecordCount > 0)
+                    {
+                        this.UIAPIRawForm.DataSources.UserDataSources.Item("UDS_Nome").Value = recPN.Fields.Item("CardName").Value.ToString();
+                    }
+
+                    // --- CAMPOS DE VALORES E COMBOBOX ---
+                    ((SAPbouiCOM.EditText)this.GetItem("VPL").Specific).Value = oRec.Fields.Item("U_FinancedAmount").Value.ToString();
+                    ((SAPbouiCOM.EditText)this.GetItem("txtTaxa").Specific).Value = oRec.Fields.Item("U_Rate").Value.ToString();
+                    ((SAPbouiCOM.EditText)this.GetItem("txtIOF").Specific).Value = oRec.Fields.Item("U_IOFValue").Value.ToString();
+                    ((SAPbouiCOM.EditText)this.GetItem("Parc").Specific).Value = oRec.Fields.Item("U_Install").Value.ToString();
+
+                    try { ((SAPbouiCOM.ComboBox)this.GetItem("CB_METODO").Specific).Select(oRec.Fields.Item("U_AmortMet").Value.ToString(), SAPbouiCOM.BoSearchKey.psk_ByValue); } catch { }
+
+                    // --- DATAS DO CONTRATO ---
+                    DateTime dtIni = Convert.ToDateTime(
+                        oRec.Fields.Item("U_StartDate").Value
+                    );
+
+                    DateTime dtFim = Convert.ToDateTime(
+                        oRec.Fields.Item("U_EndDate").Value
+                    );
+
+                    string dataIniSap = dtIni.ToString("yyyyMMdd");
+                    string dataFimSap = dtFim.ToString("yyyyMMdd");
+
+                    // UserDataSources corretos conforme o XML.
+                    this.UIAPIRawForm.DataSources.UserDataSources
+                        .Item("udtIni").ValueEx = dataIniSap;
+
+                    this.UIAPIRawForm.DataSources.UserDataSources
+                        .Item("udtfim").ValueEx = dataFimSap;
+
+                    // Campos vinculados aos UDS.
+                    SAPbouiCOM.EditText campoDataIni =
+                        (SAPbouiCOM.EditText)this.GetItem("txtDtIni").Specific;
+
+                    SAPbouiCOM.EditText campoDataFim =
+                        (SAPbouiCOM.EditText)this.GetItem("txtDtFim").Specific;
+
+                    // --- CONTAS CONTÁBEIS (Puxando os Códigos) ---
+                    string cBanc = oRec.Fields.Item("U_BankAcc").Value.ToString();
+                    string cCP = oRec.Fields.Item("U_ShortTAcc").Value.ToString();
+                    string cLP = oRec.Fields.Item("U_LongTAcc").Value.ToString(); // <-- Longo Prazo resgatado!
+                    string cJCP = oRec.Fields.Item("U_SIntAcc").Value.ToString();
+                    string cJLP = oRec.Fields.Item("U_LIntAcc").Value.ToString();
+                    string cDJ = oRec.Fields.Item("U_IntExpAcc").Value.ToString();
+                    string cDIOF = oRec.Fields.Item("U_IOFExpAcc").Value.ToString();
+
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udDCC").ValueEx = cBanc;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udCP").ValueEx = cCP;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udLP").ValueEx = cLP;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udJCP").ValueEx = cJCP;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udJLP").ValueEx = cJLP;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udDJ").ValueEx = cDJ;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udDIOF").ValueEx = cDIOF;
+
+                    // --- NOMES DAS CONTAS CONTÁBEIS (A Mágica da Descrição Multi-Banco) ---
+                    SAPbobsCOM.Recordset recConta = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+
+                    // Cria um molde da query dependendo do banco (HANA ou SQL)
+                    string queryMolde = oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB
+                        ? "SELECT \"AcctName\" FROM \"OACT\" WHERE \"AcctCode\" = '{0}'"
+                        : "SELECT AcctName FROM OACT WHERE AcctCode = '{0}'";
+
+                    if (!string.IsNullOrEmpty(cBanc)) { recConta.DoQuery(string.Format(queryMolde, cBanc)); this.UIAPIRawForm.DataSources.UserDataSources.Item("uccBanc").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+                    if (!string.IsNullOrEmpty(cCP)) { recConta.DoQuery(string.Format(queryMolde, cCP)); this.UIAPIRawForm.DataSources.UserDataSources.Item("uCcCP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+                    if (!string.IsNullOrEmpty(cLP)) { recConta.DoQuery(string.Format(queryMolde, cLP)); this.UIAPIRawForm.DataSources.UserDataSources.Item("uccLP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+                    if (!string.IsNullOrEmpty(cJCP)) { recConta.DoQuery(string.Format(queryMolde, cJCP)); this.UIAPIRawForm.DataSources.UserDataSources.Item("utJurosCP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+                    if (!string.IsNullOrEmpty(cJLP)) { recConta.DoQuery(string.Format(queryMolde, cJLP)); this.UIAPIRawForm.DataSources.UserDataSources.Item("utJurosLP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+                    if (!string.IsNullOrEmpty(cDJ)) { recConta.DoQuery(string.Format(queryMolde, cDJ)); this.UIAPIRawForm.DataSources.UserDataSources.Item("utDespJur").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+                    if (!string.IsNullOrEmpty(cDIOF)) { recConta.DoQuery(string.Format(queryMolde, cDIOF)); this.UIAPIRawForm.DataSources.UserDataSources.Item("utDespIOF").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+
+
+
+                    string docEntry = oRec.Fields.Item("DocEntry").Value.ToString();
+                    SAPbouiCOM.DataTable oDataTable = this.UIAPIRawForm.DataSources.DataTables.Item("DT_PROJ");
+
+
+                    string queryGrid = "";
+
+                    if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
+                    {
+                        // HANA: Aspas duplas nas colunas, apelidos e tabelas
+                        queryGrid = $"SELECT \"U_InstNum\" AS \"Parcela\", \"U_DueDate\" AS \"Vencimento\", \"U_InstAmt\" AS \"Valor da Parcela\", \"U_Interest\" AS \"Juros\", \"U_Amort\" AS \"Amortização\", \"U_Status\" AS \"Status\", \"U_JE_Aprop\" AS \"LCM\" FROM \"@TP_LOAN_LINES\" WHERE \"DocEntry\" = {docEntry} ORDER BY \"U_InstNum\"";
+                    }
+                    else
+                    {
+                        // SQL SERVER: Colchetes nos apelidos (para não quebrar a UI API) e na tabela de usuário
+                        queryGrid = $"SELECT U_InstNum AS [Parcela], U_DueDate AS [Vencimento], U_InstAmt AS [Valor da Parcela], U_Interest AS [Juros], U_Amort AS [Amortização], U_Status AS [Status], U_JE_Aprop AS [LCM] FROM [@TP_LOAN_LINES] WHERE DocEntry = {docEntry} ORDER BY U_InstNum";
+                    }
+
+                    oDataTable.ExecuteQuery(queryGrid);
+
+
+                    // Pega o Grid da tela
+                    SAPbouiCOM.Grid oGrid = (SAPbouiCOM.Grid)this.GetItem("plan_calc").Specific;
+
+                    // Transforma a coluna "LCM" numa coluna do tipo Link
+                    SAPbouiCOM.EditTextColumn colLCM = (SAPbouiCOM.EditTextColumn)oGrid.Columns.Item("LCM");
+                    colLCM.LinkedObjectType = "30"; // 30 = Lançamento Contábil (LCM)
+
+                    // 1. TIRA O CURSOR DA DATA E MANDA PARA O BOTÃO OK (Evita o erro 66000-23)
+                    this.UIAPIRawForm.ActiveItem = "txtContr";
+                    // Trava explicitamente as Datas, o Contrato e o Credor para ficarem cinzentos
+
+                    this.UIAPIRawForm.Mode = SAPbouiCOM.BoFormMode.fm_VIEW_MODE;
                 }
-                #endregion
-
-                #region    MODO PROCURAR DA TELA 
-
-                else if (this.UIAPIRawForm.Mode == SAPbouiCOM.BoFormMode.fm_FIND_MODE)
+                catch (Exception ex)
                 {
-                    BubbleEvent = true;
-                    try
-                    {
-                        string contratoId = ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value.Trim();
-
-                        if (string.IsNullOrEmpty(contratoId))
-                        {
-                            throw new Exception("Digite o número do contrato antes de clicar em Procurar.");
-                        }
-
-                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Pronto!", SAPbouiCOM.BoMessageTime.bmt_Short, false);
-
-                        this.UIAPIRawForm.Freeze(true);
-
-                        // VERIFICA E PREENCHE A COMMONCLASS SE ELA ESTIVER VAZIA:
-                        if (TreasurePlus.CORE.CommomClass.oCompany == null)
-                        {
-                            TreasurePlus.CORE.CommomClass.oCompany = (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
-                        }
-
-                        SAPbobsCOM.Company oCompany = TreasurePlus.CORE.CommomClass.oCompany;
-
-                        SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
-                        oRec.DoQuery($"SELECT * FROM [@TP_LOAN] WHERE CAST(U_NumContrato AS NVARCHAR(MAX)) = '{contratoId}'");
-
-                        if (oRec.RecordCount == 0)
-                        {
-                            throw new Exception("Contrato não encontrado na base de dados.");
-                        }
-
-                        // --- PARCEIRO DE NEGÓCIOS ---
-                        string credorCode = oRec.Fields.Item("U_CreditorNumber").Value.ToString();
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("UDS_Credor").Value = credorCode;
-
-                        SAPbobsCOM.Recordset recPN = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
-                        recPN.DoQuery($"SELECT CardName FROM OCRD WHERE CardCode = '{credorCode}'");
-                        if (recPN.RecordCount > 0)
-                        {
-                            this.UIAPIRawForm.DataSources.UserDataSources.Item("UDS_Nome").Value = recPN.Fields.Item("CardName").Value.ToString();
-                        }
-
-                        // --- CAMPOS DE VALORES E COMBOBOX ---
-                        ((SAPbouiCOM.EditText)this.GetItem("VPL").Specific).Value = oRec.Fields.Item("U_FinancedAmount").Value.ToString();
-                        ((SAPbouiCOM.EditText)this.GetItem("txtTaxa").Specific).Value = oRec.Fields.Item("U_Rate").Value.ToString();
-                        ((SAPbouiCOM.EditText)this.GetItem("txtIOF").Specific).Value = oRec.Fields.Item("U_IOFValue").Value.ToString();
-                        ((SAPbouiCOM.EditText)this.GetItem("Parc").Specific).Value = oRec.Fields.Item("U_Install").Value.ToString();
-
-                        try { ((SAPbouiCOM.ComboBox)this.GetItem("CB_METODO").Specific).Select(oRec.Fields.Item("U_AmortMet").Value.ToString(), SAPbouiCOM.BoSearchKey.psk_ByValue); } catch { }
-
-                        // --- DATAS DO CONTRATO ---
-                        DateTime dtIni = Convert.ToDateTime(
-                            oRec.Fields.Item("U_StartDate").Value
-                        );
-
-                        DateTime dtFim = Convert.ToDateTime(
-                            oRec.Fields.Item("U_EndDate").Value
-                        );
-
-                        string dataIniSap = dtIni.ToString("yyyyMMdd");
-                        string dataFimSap = dtFim.ToString("yyyyMMdd");
-
-                        // UserDataSources corretos conforme o XML.
-                        this.UIAPIRawForm.DataSources.UserDataSources
-                            .Item("udtIni").ValueEx = dataIniSap;
-
-                        this.UIAPIRawForm.DataSources.UserDataSources
-                            .Item("udtfim").ValueEx = dataFimSap;
-
-                        // Campos vinculados aos UDS.
-                        SAPbouiCOM.EditText campoDataIni =
-                            (SAPbouiCOM.EditText)this.GetItem("txtDtIni").Specific;
-
-                        SAPbouiCOM.EditText campoDataFim =
-                            (SAPbouiCOM.EditText)this.GetItem("txtDtFim").Specific;
-
-                        // --- CONTAS CONTÁBEIS (Puxando os Códigos) ---
-                        string cBanc = oRec.Fields.Item("U_BankAcc").Value.ToString();
-                        string cCP = oRec.Fields.Item("U_ShortTAcc").Value.ToString();
-                        string cLP = oRec.Fields.Item("U_LongTAcc").Value.ToString(); // <-- Longo Prazo resgatado!
-                        string cJCP = oRec.Fields.Item("U_SIntAcc").Value.ToString();
-                        string cJLP = oRec.Fields.Item("U_LIntAcc").Value.ToString();
-                        string cDJ = oRec.Fields.Item("U_IntExpAcc").Value.ToString();
-                        string cDIOF = oRec.Fields.Item("U_IOFExpAcc").Value.ToString();
-
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udDCC").ValueEx = cBanc;
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udCP").ValueEx = cCP;
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udLP").ValueEx = cLP;
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udJCP").ValueEx = cJCP;
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udJLP").ValueEx = cJLP;
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udDJ").ValueEx = cDJ;
-                        this.UIAPIRawForm.DataSources.UserDataSources.Item("udDIOF").ValueEx = cDIOF;
-
-                        // --- NOMES DAS CONTAS CONTÁBEIS (A Mágica da Descrição) ---
-                        SAPbobsCOM.Recordset recConta = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
-
-                        if (!string.IsNullOrEmpty(cBanc)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cBanc}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("uccBanc").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-                        if (!string.IsNullOrEmpty(cCP)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cCP}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("uCcCP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-                        if (!string.IsNullOrEmpty(cLP)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cLP}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("uccLP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-                        if (!string.IsNullOrEmpty(cJCP)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cJCP}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("utJurosCP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-                        if (!string.IsNullOrEmpty(cJLP)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cJLP}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("utJurosLP").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-                        if (!string.IsNullOrEmpty(cDJ)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cDJ}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("utDespJur").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-                        if (!string.IsNullOrEmpty(cDIOF)) { recConta.DoQuery($"SELECT AcctName FROM OACT WHERE AcctCode = '{cDIOF}'"); this.UIAPIRawForm.DataSources.UserDataSources.Item("utDespIOF").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
-
-                        string docEntry = oRec.Fields.Item("DocEntry").Value.ToString();
-                        SAPbouiCOM.DataTable oDataTable = this.UIAPIRawForm.DataSources.DataTables.Item("DT_PROJ");
-
-                        string queryGrid = $"SELECT U_InstNum AS 'Parcela', U_DueDate AS 'Vencimento', U_InstAmt AS 'Valor da Parcela', U_Interest AS 'Juros', U_Amort AS 'Amortização', U_Status AS 'Status', U_JE_Aprop AS 'LCM' FROM [@TP_LOAN_LINES] WHERE DocEntry = {docEntry} ORDER BY U_InstNum";
-                        oDataTable.ExecuteQuery(queryGrid);
-                        // Pega o Grid da tela
-                        SAPbouiCOM.Grid oGrid = (SAPbouiCOM.Grid)this.GetItem("plan_calc").Specific;
-
-                        // Transforma a coluna "LCM" numa coluna do tipo Link
-                        SAPbouiCOM.EditTextColumn colLCM = (SAPbouiCOM.EditTextColumn)oGrid.Columns.Item("LCM");
-                        colLCM.LinkedObjectType = "30"; // 30 = Lançamento Contábil (LCM)
-
-                        // 1. TIRA O CURSOR DA DATA E MANDA PARA O BOTÃO OK (Evita o erro 66000-23)
-                        this.UIAPIRawForm.ActiveItem = "txtContr";
-                        // Trava explicitamente as Datas, o Contrato e o Credor para ficarem cinzentos
-                        
-                        this.UIAPIRawForm.Mode = SAPbouiCOM.BoFormMode.fm_VIEW_MODE;
-                    }
-                    catch (Exception ex)
-                    {
-                        SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Erro ao buscar: " + ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, true);
-                        BubbleEvent = false;
-                    }
-                    finally
-                    {
-                        this.UIAPIRawForm.Freeze(false);
-                    }
+                    SAPbouiCOM.Framework.Application.SBO_Application.SetStatusBarMessage("Erro ao buscar: " + ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, true);
+                    BubbleEvent = false;
                 }
-                #endregion 
-
+                finally
+                {
+                    this.UIAPIRawForm.Freeze(false);
+                }
             }
+            #endregion
+
         }
+
 
 
 
@@ -771,27 +901,54 @@ namespace TreasurePlus
 
                 string contratoAtual = ((SAPbouiCOM.EditText)this.GetItem("txtContr").Specific).Value.Trim();
 
-                SAPbobsCOM.Company oCompany = TreasurePlus.CORE.CommomClass.oCompany ?? (SAPbobsCOM.Company)SAPbouiCOM.Framework.Application.SBO_Application.Company.GetDICompany();
+                SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
                 SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
 
                 string query = "";
-                // Truque do CAST para driblar a limitação do tipo ntext no SQL Server
-                string campoNvarchar = "CAST(U_NumContrato AS NVARCHAR(250))";
 
-                if (string.IsNullOrEmpty(contratoAtual))
+                // Verifica o tipo de banco de dados
+                if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
                 {
-                    if (direcao == "PROXIMO")
-                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] ORDER BY {campoNvarchar} ASC";
-                    else if (direcao == "ANTERIOR")
-                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] ORDER BY {campoNvarchar} DESC";
+                    // HANA: Aspas duplas e LIMIT 1 no final
+                    string campoHana = "CAST(\"U_NumContrato\" AS NVARCHAR(250))";
+
+                    if (string.IsNullOrEmpty(contratoAtual))
+                    {
+                        if (direcao == "PROXIMO")
+                            query = $"SELECT {campoHana} FROM \"@TP_LOAN\" ORDER BY {campoHana} ASC LIMIT 1";
+                        else if (direcao == "ANTERIOR")
+                            query = $"SELECT {campoHana} FROM \"@TP_LOAN\" ORDER BY {campoHana} DESC LIMIT 1";
+                    }
+                    else
+                    {
+                        if (direcao == "PROXIMO")
+                            query = $"SELECT {campoHana} FROM \"@TP_LOAN\" WHERE {campoHana} > '{contratoAtual}' ORDER BY {campoHana} ASC LIMIT 1";
+                        else if (direcao == "ANTERIOR")
+                            query = $"SELECT {campoHana} FROM \"@TP_LOAN\" WHERE {campoHana} < '{contratoAtual}' ORDER BY {campoHana} DESC LIMIT 1";
+                    }
                 }
                 else
                 {
-                    if (direcao == "PROXIMO")
-                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] WHERE {campoNvarchar} > '{contratoAtual}' ORDER BY {campoNvarchar} ASC";
-                    else if (direcao == "ANTERIOR")
-                        query = $"SELECT TOP 1 {campoNvarchar} FROM [@TP_LOAN] WHERE {campoNvarchar} < '{contratoAtual}' ORDER BY {campoNvarchar} DESC";
+                    // SQL SERVER: Colchetes e TOP 1 no começo
+                    string campoSql = "CAST(U_NumContrato AS NVARCHAR(250))";
+
+                    if (string.IsNullOrEmpty(contratoAtual))
+                    {
+                        if (direcao == "PROXIMO")
+                            query = $"SELECT TOP 1 {campoSql} FROM [@TP_LOAN] ORDER BY {campoSql} ASC";
+                        else if (direcao == "ANTERIOR")
+                            query = $"SELECT TOP 1 {campoSql} FROM [@TP_LOAN] ORDER BY {campoSql} DESC";
+                    }
+                    else
+                    {
+                        if (direcao == "PROXIMO")
+                            query = $"SELECT TOP 1 {campoSql} FROM [@TP_LOAN] WHERE {campoSql} > '{contratoAtual}' ORDER BY {campoSql} ASC";
+                        else if (direcao == "ANTERIOR")
+                            query = $"SELECT TOP 1 {campoSql} FROM [@TP_LOAN] WHERE {campoSql} < '{contratoAtual}' ORDER BY {campoSql} DESC";
+                    }
                 }
+
+                oRec.DoQuery(query);
 
                 oRec.DoQuery(query);
 
@@ -833,6 +990,7 @@ namespace TreasurePlus
             BubbleEvent = true;
             NavegarContrato("PROXIMO");
         }
-    }
 
+        
+    }
 }

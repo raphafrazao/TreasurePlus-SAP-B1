@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="BUSSINES\CalculadoraEmprestimo.cs" />
     <Compile Include="BUSSINES\ContratoBusiness.cs" />
+    <Compile Include="CORE\SetupMetadados.cs" />
     <Compile Include="FORMS\FormBaixaPgto.b1f.cs">
       <DependentUpon>FormBaixaPgto.b1f</DependentUpon>
     </Compile>
@@ -79,11 +80,15 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Imagens\icons8-dinheiro-16.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="MENUS\MenuAdd.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="MENUS\MenuRemove.xml" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -184,32 +184,81 @@ namespace TreasurePlus.Business
             if (parcelasSelecionadas == null || parcelasSelecionadas.Count == 0)
                 throw new Exception("Nenhuma parcela selecionada para busca.");
 
+            // Formata os números das parcelas para o SQL (ex: '1','2','3')
             string parcelasFiltroSql = "'" + string.Join("','", parcelasSelecionadas) + "'";
 
-            // QUERY 100% SEGURA: Sem JOIN com tabelas @TP. Apenas o financeiro nativo.
-            string queryContab = "SELECT 'Y' AS 'Baixar', T0.TransId AS 'Nº LCM', T1.Line_ID AS 'Linha', T1.ShortName AS 'Credor', " +
-                                 "T1.Ref1 AS 'Ref. 1 (Contrato)', T1.Ref2 AS 'Ref. 2 (Parcela)', T1.Ref3Line AS 'Ref. 3 (Origem)', " +
-                                 "T1.DueDate AS 'Vencimento', T1.Credit AS 'Valor Original (Crédito)', T1.BalDueCred AS 'Saldo a Pagar', " +
-                                 "CAST(0.0 AS NUMERIC(19,2)) AS 'Multa', CAST(0.0 AS NUMERIC(19,2)) AS 'Desconto Juros', T1.Credit AS 'Total Pago', " +
-                                 "CAST(0.0 AS NUMERIC(19,2)) AS 'Valor Juros' " +
-                                 "FROM OJDT T0 INNER JOIN JDT1 T1 ON T0.TransId = T1.TransId " +
-                                 $"WHERE T1.ShortName = '{credorPN}' " +
-                                 $"AND T1.Ref1 = '{contratoExterno}' " +
-                                 $"AND T1.Ref2 IN ({parcelasFiltroSql}) " +
-                                 "AND T1.Ref3Line = 'Contrato TreasurePlus' " +
-                                 "AND T1.BalDueCred > 0 " +
-                                 "ORDER BY T1.Ref2";
+            // A MEGA QUERY CONTÁBIL (Ref1 = Contrato | Ref2 = Parcela | Ref3 = Contrato TreasurePlus)
+            string queryContab = "";
+
+            if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
+            {
+                // HANA: Query super limpa, apenas tabelas nativas
+                queryContab = $@"
+                    SELECT 
+                        'Y' AS ""Baixar"", 
+                        T0.""TransId"" AS ""Nº LCM"", 
+                        T1.""Line_ID"" AS ""Linha"",
+                        T1.""ShortName"" AS ""Credor"", 
+                        T1.""Account"" AS ""Conta Controle"", 
+                        T1.""Ref1"" AS ""Ref. 1 (Contrato)"", 
+                        T1.""Ref2"" AS ""Ref. 2 (Parcela)"", 
+                        T1.""Ref3Line"" AS ""Ref. 3 (Origem)"",
+                        T1.""DueDate"" AS ""Vencimento"", 
+                        T1.""Credit"" AS ""Valor Original (Crédito)"",
+                        T1.""BalDueCred"" AS ""Saldo a Pagar"",
+                        0.0 AS ""Multa"",
+                        0.0 AS ""Desconto Juros"",
+                        T1.""Credit"" AS ""Total Pago"",
+                        0.0 AS ""Valor Juros"" 
+                    FROM ""OJDT"" T0
+                    INNER JOIN ""JDT1"" T1 ON T0.""TransId"" = T1.""TransId""
+                    WHERE T1.""ShortName"" = '{credorPN}'
+                      AND T1.""Ref1"" = '{contratoExterno}'
+                      AND T1.""Ref2"" IN ({parcelasFiltroSql})
+                      AND T1.""Ref3Line"" = 'Contrato TreasurePlus'
+                      AND T1.""BalDueCred"" > 0 
+                    ORDER BY T1.""Ref2""";
+            }
+            else
+            {
+                // SQL SERVER: Query super limpa, apenas tabelas nativas
+                queryContab = $@"
+                    SELECT 
+                        'Y' AS [Baixar], 
+                        T0.TransId AS [Nº LCM], 
+                        T1.Line_ID AS [Linha],
+                        T1.ShortName AS [Credor], 
+                        T1.Account AS [Conta Controle], 
+                        T1.Ref1 AS [Ref. 1 (Contrato)], 
+                        T1.Ref2 AS [Ref. 2 (Parcela)], 
+                        T1.Ref3Line AS [Ref. 3 (Origem)],
+                        T1.DueDate AS [Vencimento], 
+                        T1.Credit AS [Valor Original (Crédito)],
+                        T1.BalDueCred AS [Saldo a Pagar],
+                        0.0 AS [Multa],
+                        0.0 AS [Desconto Juros],
+                        T1.Credit AS [Total Pago],
+                        0.0 AS [Valor Juros] 
+                    FROM OJDT T0
+                    INNER JOIN JDT1 T1 ON T0.TransId = T1.TransId
+                    WHERE T1.ShortName = '{credorPN}'
+                      AND T1.Ref1 = '{contratoExterno}'
+                      AND T1.Ref2 IN ({parcelasFiltroSql})
+                      AND T1.Ref3Line = 'Contrato TreasurePlus'
+                      AND T1.BalDueCred > 0 
+                    ORDER BY T1.Ref2";
+            }
 
             return queryContab;
         }
 
-        // =======================================================
+            // =======================================================
 
-        //MÉTODO 4:Pagamento + LCM de Apropriação 
-        // =======================================================
+            //MÉTODO 4:Pagamento + LCM de Apropriação 
+            // =======================================================
 
 
-        public int EfetuarBaixaParcelas(
+            public int EfetuarBaixaParcelas(
             int docEntryContrato, // NOVO PARÂMETRO DA CHAVE PRIMÁRIA
             string credorCode,
             string contaBancaria,

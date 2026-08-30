@@ -3,7 +3,7 @@
 	<Menus>
 		<action type="add">
 			<!-- NÍVEL 1: Cria a Pasta Principal no Menu do SAP (Módulo) -->
-			<Menu Checked="0" Enabled="1" FatherUID="43520" Position="-1" String="TreasurePlus" Type="2" UniqueID="TreasurePlus_Folder" Image=""/>
+			<Menu Checked="0" Enabled="1" FatherUID="43520" Position="-1" String="TreasurePlus" Type="2" UniqueID="TreasurePlus_Folder" Image="%path%\Imagens\icons8-dinheiro-16.png"/>
 
 			<!-- NÍVEL 2: Cria a Subpasta dentro da TreasurePlus -->
 			<Menu Checked="0" Enabled="1" FatherUID="TreasurePlus_Folder" Position="-1" String="Contratos Empréstimos" Type="2" UniqueID="TreasurePlus_SubFolder" Image=""/>

@@ -16,6 +16,10 @@ namespace TreasurePlus
             string xmlMenu = RESOURCES.Resource.MenuAdd;
             try
             {
+                // Substitui a tag %path% pelo diretório atual de execução do add-on
+                xmlMenu = xmlMenu.Replace("%path%", Environment.CurrentDirectory);
+
+                // Envia o XML para o SAP carregar[cite: 1]
                 Application.SBO_Application.LoadBatchActions(xmlMenu);
             }
             catch (Exception ex)
@@ -23,6 +27,7 @@ namespace TreasurePlus
                 throw new InvalidOperationException("Não foi possível criar os menus do TreasurePlus.", ex);
             }
         }
+
 
         public void RemoverMenuSeExistir()
         {
