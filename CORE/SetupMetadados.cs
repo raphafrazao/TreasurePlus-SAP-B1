@@ -38,11 +38,8 @@ namespace TreasurePlus
                 CriarCampo("TP_LOAN", "IOFExpAcc", "Despesa IOF", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 15);
                 CriarCampo("TP_LOAN", "LongTAcc", "Conta C. Contábil LP", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 15);
                 CriarCampo("TP_LOAN", "NumContrato", "Numero Contrato Externo", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 50);
-
+                CriarCampo("TP_LOAN", "PenaltyAcc", "Juros por Mora", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 15); 
                 CriarCampo("TP_LOAN", "BPLId", "Filial do Contrato", BoFieldTypes.db_Numeric, BoFldSubTypes.st_None, 11);// versão 1.0.0.1
-
-
-
                 // NOTA: Ajustado para Alpha 10 para suportar valores como "Aberto" / "A", em vez de estritamente numérico.
                 CriarCampo("TP_LOAN", "Status", "Status", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 10);
 
@@ -53,6 +50,7 @@ namespace TreasurePlus
                 CriarCampo("TP_LOAN_LINES", "Interest", "Juros da Parcela", BoFieldTypes.db_Float, BoFldSubTypes.st_Price, 11);
                 CriarCampo("TP_LOAN_LINES", "Amort", "Amortização", BoFieldTypes.db_Float, BoFldSubTypes.st_Price, 11);
                 CriarCampo("TP_LOAN_LINES", "Status", "Status da Parcela", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 10);
+                //CriarCampo("TP_LOAN_LINES", "PenaltyAcc", "Status da Parcela", BoFieldTypes.db_Alpha, BoFldSubTypes.st_None, 10);
 
                 // Campos Vinculados a Objetos do Sistema!
                 CriarCampo("TP_LOAN_LINES", "JE_Aprop", "LCM Apropriação", BoFieldTypes.db_Numeric, BoFldSubTypes.st_None, 11, UDFLinkedSystemObjectTypesEnum.ulJournalEntries);

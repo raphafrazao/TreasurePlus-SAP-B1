@@ -223,6 +223,10 @@ namespace TreasurePlus
             this.UIAPIRawForm.Items.Item("tJurosLP").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
             this.UIAPIRawForm.Items.Item("tDespJur").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
             this.UIAPIRawForm.Items.Item("tDespIOF").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
+            // NOVOS CAMPOS BLOQUEADOS: versão 1.0.0.1
+            this.UIAPIRawForm.Items.Item("txtFilial").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
+            this.UIAPIRawForm.Items.Item("despMulta").SetAutoManagedAttribute(SAPbouiCOM.BoAutoManagedAttr.ama_Editable, 4, SAPbouiCOM.BoModeVisualBehavior.mvb_False);
+
         }
 
         #region MÉTODO DAS LUPAS 
@@ -230,7 +234,7 @@ namespace TreasurePlus
         // --- MÉTODO 0: LUPA DO CÓDIGO ---FILIAL ATIVA
 
         
-        private void EditText21_ChooseFromListAfter(object sboObject, SAPbouiCOM.SBOItemEventArg pVal)
+        public void EditText21_ChooseFromListAfter(object sboObject, SAPbouiCOM.SBOItemEventArg pVal)
         {
             SAPbouiCOM.ISBOChooseFromListEventArg oCFLEvento = null;
             oCFLEvento = (SAPbouiCOM.ISBOChooseFromListEventArg)pVal;
@@ -241,12 +245,13 @@ namespace TreasurePlus
             if (oDataTable == null)
                 return;
 
-            var codigofILIAL = oDataTable.GetValue("BPLId", 0).ToString();
-            var nome = oDataTable.GetValue("BPLName", 0).ToString();
+            var codigofilial = oDataTable.GetValue("BPLId", 0).ToString();
+            var nomeFilial = oDataTable.GetValue("BPLName", 0).ToString();
 
-            this.UIAPIRawForm.DataSources.UserDataSources.Item("udsFilial").ValueEx = nome;
+            this.UIAPIRawForm.DataSources.UserDataSources.Item("udsFilial").ValueEx = nomeFilial;
 
-
+           // FALTAVA ISSO: Guarda o ID(BPLId) da filial na memória para a hora de salvar!
+            this.UIAPIRawForm.DataSources.UserDataSources.Item("udBPLId").ValueEx = codigofilial;
         }
 
 
@@ -477,7 +482,6 @@ namespace TreasurePlus
 
             this.UIAPIRawForm.DataSources.UserDataSources.Item("udMulta").ValueEx = conta;
             this.UIAPIRawForm.DataSources.UserDataSources.Item("UD_Multa").ValueEx = nome;
-
         }
 
 
@@ -654,7 +658,12 @@ namespace TreasurePlus
 
                     //Novas Variáveis da Versão 1.0.0.1 
 
+                    string idFilialStr = this.UIAPIRawForm.DataSources.UserDataSources.Item("udBPLId").Value.Trim();
+                    string contaMulta = this.UIAPIRawForm.DataSources.UserDataSources.Item("udMulta").Value.Trim();
 
+                    if (string.IsNullOrEmpty(idFilialStr)) throw new Exception("Por favor, selecione a Filial antes de adicionar o contrato.");
+
+                    int bplId = Convert.ToInt32(idFilialStr);
 
                     SAPbouiCOM.DataTable oGridData = this.UIAPIRawForm.DataSources.DataTables.Item("DT_PROJ");
                     if (oGridData.Rows.Count == 0) throw new Exception("Por favor, clique em 'Calcular' para gerar as parcelas ou informe antes de adicionar o contrato.");
@@ -663,16 +672,20 @@ namespace TreasurePlus
                     ContratoBusiness negocioContrato = new ContratoBusiness();
 
                     // 2. Chamamos a geração do LCM
+                    // IMPORTANTE: Você precisará ir na classe ContratoBusiness e adicionar o 'bplId' e 'contaMulta' nos parâmetros deste método!
                     int transIdContabil = negocioContrato.GerarLancamentoContabilContrato(
                         contratoId, codePN, vpl, valorIof, dtIni, dtFim,
-                        oGridData, contaBancaria, contaDespIof, contaCp, contaLp, contaJurosCp, contaJurosLp
+                        oGridData, contaBancaria, contaDespIof, contaCp, contaLp, contaJurosCp, contaJurosLp,
+                        bplId, contaMulta
                     );
 
                     // 3. Chamamos o salvamento do UDO
+                    // IMPORTANTE: Adicione também o 'bplId' e 'contaMulta' nos parâmetros deste método na classe ContratoBusiness!
                     negocioContrato.SalvarContratoNoUDO(
                         contratoId, codePN, vpl, valorIof, taxa, parcelas, metodo, dtIni, dtFim,
                         oGridData, transIdContabil, contaBancaria, contaCp, contaLp,
-                        contaJurosCp, contaJurosLp, contaDespJuros, contaDespIof
+                        contaJurosCp, contaJurosLp, contaDespJuros, contaDespIof,
+                        bplId, contaMulta
                     );
 
                     // -------------------------------------------------------------
@@ -816,6 +829,11 @@ namespace TreasurePlus
                     string cDJ = oRec.Fields.Item("U_IntExpAcc").Value.ToString();
                     string cDIOF = oRec.Fields.Item("U_IOFExpAcc").Value.ToString();
 
+                    // --- RESGATANDO OS NOVOS CAMPOS DO BANCO ---
+                    // Certifique-se que você criou os campos U_BPLId e U_PenaltyAcc na tabela @TP_LOAN (UDO)
+                    string bplIdBanco = oRec.Fields.Item("U_BPLId").Value.ToString();
+                    string cMulta = oRec.Fields.Item("U_PenaltyAcc").Value.ToString();
+
                     this.UIAPIRawForm.DataSources.UserDataSources.Item("udDCC").ValueEx = cBanc;
                     this.UIAPIRawForm.DataSources.UserDataSources.Item("udCP").ValueEx = cCP;
                     this.UIAPIRawForm.DataSources.UserDataSources.Item("udLP").ValueEx = cLP;
@@ -823,6 +841,9 @@ namespace TreasurePlus
                     this.UIAPIRawForm.DataSources.UserDataSources.Item("udJLP").ValueEx = cJLP;
                     this.UIAPIRawForm.DataSources.UserDataSources.Item("udDJ").ValueEx = cDJ;
                     this.UIAPIRawForm.DataSources.UserDataSources.Item("udDIOF").ValueEx = cDIOF;
+                    // Alimentando as novas UDS
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udBPLId").ValueEx = bplIdBanco;
+                    this.UIAPIRawForm.DataSources.UserDataSources.Item("udMulta").ValueEx = cMulta;
 
                     // --- NOMES DAS CONTAS CONTÁBEIS (A Mágica da Descrição Multi-Banco) ---
                     SAPbobsCOM.Recordset recConta = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
@@ -840,6 +861,20 @@ namespace TreasurePlus
                     if (!string.IsNullOrEmpty(cDJ)) { recConta.DoQuery(string.Format(queryMolde, cDJ)); this.UIAPIRawForm.DataSources.UserDataSources.Item("utDespJur").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
                     if (!string.IsNullOrEmpty(cDIOF)) { recConta.DoQuery(string.Format(queryMolde, cDIOF)); this.UIAPIRawForm.DataSources.UserDataSources.Item("utDespIOF").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
 
+                    // Buscando o nome da conta de multa
+                    if (!string.IsNullOrEmpty(cMulta)) { recConta.DoQuery(string.Format(queryMolde, cMulta)); this.UIAPIRawForm.DataSources.UserDataSources.Item("UD_Multa").ValueEx = recConta.Fields.Item(0).Value.ToString(); }
+
+                    // Buscando o nome da Filial para exibir na tela
+                    if (!string.IsNullOrEmpty(bplIdBanco))
+                    {
+                        string queryFilial = oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB
+                            ? $"SELECT \"BPLName\" FROM \"OBPL\" WHERE \"BPLId\" = '{bplIdBanco}'"
+                            : $"SELECT BPLName FROM OBPL WHERE BPLId = '{bplIdBanco}'";
+
+                        recConta.DoQuery(queryFilial);
+                        if (recConta.RecordCount > 0)
+                            this.UIAPIRawForm.DataSources.UserDataSources.Item("udsFilial").ValueEx = recConta.Fields.Item(0).Value.ToString();
+                    }
 
 
                     string docEntry = oRec.Fields.Item("DocEntry").Value.ToString();

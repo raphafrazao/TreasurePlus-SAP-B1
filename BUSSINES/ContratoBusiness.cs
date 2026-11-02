@@ -20,16 +20,15 @@ namespace TreasurePlus.Business
         // MÉTODO 1: GERAR LANÇAMENTO CONTÁBIL
         // =======================================================
         public int GerarLancamentoContabilContrato(
-            string contratoId, string codePN, double vpl, double valorIof,
-            DateTime dtIni, DateTime dtFim, SAPbouiCOM.DataTable oGridData,
-            string contaBancaria, string contaDespIof, string contaCp,
-            string contaLp, string contaJurosCp, string contaJurosLp)
+             string contratoId, string codePN, double vpl, double valorIof,
+             DateTime dtIni, DateTime dtFim, SAPbouiCOM.DataTable oGridData,
+             string contaBancaria, string contaDespIof, string contaCp,
+             string contaLp, string contaJurosCp, string contaJurosLp, int BPLId, string contaMulta)
         {
             SAPbobsCOM.JournalEntries oJE = null;
             try
             {
-                oJE = (SAPbobsCOM.JournalEntries)oCompany.GetBusinessObject(
-                    SAPbobsCOM.BoObjectTypes.oJournalEntries);
+                oJE = (SAPbobsCOM.JournalEntries)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oJournalEntries);
 
                 oJE.TaxDate = dtIni;
                 oJE.DueDate = dtFim;
@@ -41,30 +40,30 @@ namespace TreasurePlus.Business
                 if (vpl > 0)
                 {
                     oJE.Lines.AccountCode = contaBancaria;
+                    oJE.Lines.BPLID = BPLId; // <-- FILIAL INJETADA
                     oJE.Lines.Debit = vpl;
                     oJE.Lines.TaxDate = dtIni;
                     oJE.Lines.DueDate = dtIni;
-                    oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId +
-                                         " " + codePN + " - Aporte Bruto";
+                    oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId + " " + codePN + " - Aporte Bruto";
                     oJE.Lines.Add();
                 }
 
                 if (valorIof > 0)
                 {
                     oJE.Lines.AccountCode = contaDespIof;
+                    oJE.Lines.BPLID = BPLId; // <-- FILIAL INJETADA
                     oJE.Lines.Debit = valorIof;
                     oJE.Lines.TaxDate = dtIni;
                     oJE.Lines.DueDate = dtIni;
-                    oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId +
-                                         " " + codePN + " - Despesa IOF";
+                    oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId + " " + codePN + " - Despesa IOF";
                     oJE.Lines.Add();
 
                     oJE.Lines.AccountCode = contaBancaria;
+                    oJE.Lines.BPLID = BPLId; // <-- FILIAL INJETADA
                     oJE.Lines.Credit = valorIof;
                     oJE.Lines.TaxDate = dtIni;
                     oJE.Lines.DueDate = dtIni;
-                    oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId +
-                                         " " + codePN + " - IOF Debitado em Conta";
+                    oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId + " " + codePN + " - IOF Debitado em Conta";
                     oJE.Lines.Add();
                 }
 
@@ -81,33 +80,29 @@ namespace TreasurePlus.Business
                     if (juros > 0)
                     {
                         oJE.Lines.AccountCode = contaJurosUsada;
+                        oJE.Lines.BPLID = BPLId; // <-- FILIAL INJETADA
                         oJE.Lines.Debit = juros;
                         oJE.Lines.TaxDate = dtIni;
                         oJE.Lines.DueDate = vencimento;
-
-                        // O SEGREDO AQUI: Guardando os vínculos nativamente!
-                        oJE.Lines.Reference1 = contratoId;           // Ref 1 = ID do Contrato
-                        oJE.Lines.Reference2 = numParcela.ToString(); // Ref 2 = Número da Parcela
-                                                                      // Insere a Flag de Bloqueio para o Contas a Pagar                       
-                        oJE.Lines.AdditionalReference = "Contrato TreasurePlus"; // "Reference3", 
-                        oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId +
-                                             " " + codePN + " " + numParcela + "/" + totalParcelas;
+                        oJE.Lines.Reference1 = contratoId;
+                        oJE.Lines.Reference2 = numParcela.ToString();
+                        oJE.Lines.AdditionalReference = "Contrato TreasurePlus";
+                        oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId + " " + codePN + " " + numParcela + "/" + totalParcelas;
                         oJE.Lines.Add();
                     }
 
                     if (valorParcela > 0)
                     {
                         oJE.Lines.AccountCode = contaPassivoUsada;
+                        oJE.Lines.BPLID = BPLId; // <-- FILIAL INJETADA
                         oJE.Lines.ShortName = codePN;
                         oJE.Lines.Credit = valorParcela;
                         oJE.Lines.TaxDate = dtIni;
                         oJE.Lines.DueDate = vencimento;
-                        // O SEGREDO AQUI TAMBÉM:
-                        oJE.Lines.Reference1 = contratoId;// Ref 1 = ID do Contrato
-                        oJE.Lines.Reference2 = numParcela.ToString();// Ref 2 = Número da Parcela
-                        oJE.Lines.AdditionalReference = "Contrato TreasurePlus"; // "Reference3", 
-                        oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId +
-                                             " " + codePN + " " + numParcela + "/" + totalParcelas;
+                        oJE.Lines.Reference1 = contratoId;
+                        oJE.Lines.Reference2 = numParcela.ToString();
+                        oJE.Lines.AdditionalReference = "Contrato TreasurePlus";
+                        oJE.Lines.LineMemo = "Contrato de Emprestimo " + contratoId + " " + codePN + " " + numParcela + "/" + totalParcelas;
                         oJE.Lines.Add();
                     }
                 }
@@ -133,7 +128,7 @@ namespace TreasurePlus.Business
             DateTime dtFim, SAPbouiCOM.DataTable oGridData, int transIdContabil,
             string contaBancaria, string contaCp, string contaLp,
             string contaJurosCp, string contaJurosLp, string contaDespJuros,
-            string contaDespIof)
+            string contaDespIof, int bplId, string contaMulta)
         {
             SAPbobsCOM.CompanyService oCompanyService = oCompany.GetCompanyService();
             SAPbobsCOM.GeneralService oGeneralService = oCompanyService.GetGeneralService("TP_LOAN");
@@ -156,7 +151,9 @@ namespace TreasurePlus.Business
             oGeneralData.SetProperty("U_SIntAcc", contaJurosCp);
             oGeneralData.SetProperty("U_IntExpAcc", contaDespJuros);
             oGeneralData.SetProperty("U_IOFExpAcc", contaDespIof);
-            oGeneralData.SetProperty("U_Status", 1);
+            oGeneralData.SetProperty("U_Status", "O");
+            oGeneralData.SetProperty("U_BPLId", bplId);
+            oGeneralData.SetProperty("U_PenaltyAcc", contaMulta);
 
             SAPbobsCOM.GeneralDataCollection oChildren = oGeneralData.Child("TP_LOAN_LINES");
 
@@ -252,20 +249,22 @@ namespace TreasurePlus.Business
             return queryContab;
         }
 
-            // =======================================================
+        // =======================================================
 
-            //MÉTODO 4:Pagamento + LCM de Apropriação 
-            // =======================================================
+        //MÉTODO 4:Pagamento + LCM de Apropriação 
+        // =======================================================
 
 
-            public int EfetuarBaixaParcelas(
-            int docEntryContrato, // NOVO PARÂMETRO DA CHAVE PRIMÁRIA
-            string credorCode,
-            string contaBancaria,
-            string contaDespesasJuros,
-            string contaJurosApropriar, /* NOVO PARÂMETRO */
-            DateTime dataPagamento,
-            List<Dictionary<string, object>> parcelasParaBaixar)
+        public int EfetuarBaixaParcelas(
+         int docEntryContrato,
+         string credorCode,
+         string contaBancaria,
+         string contaDespesasJuros,
+         string contaJurosApropriar,
+         DateTime dataPagamento,
+         List<Dictionary<string, object>> parcelasParaBaixar,
+         int bplId,          // <-- NOVO: ID da Filial
+         string contaMulta)  // <-- NOVO: Conta Contábil de Multa
         {
             SAPbobsCOM.Company oCompany = TreasurePlus.CORE.CommomClass.oCompany;
 
@@ -294,12 +293,14 @@ namespace TreasurePlus.Business
                     {
                         if (temLinhaNoLCM) oJE.Lines.Add();
                         oJE.Lines.AccountCode = contaDespesasJuros;
+                        oJE.Lines.BPLID = bplId; // <-- INJETADO
                         oJE.Lines.Debit = valorJuros;
                         oJE.Lines.Reference1 = p["Ref1"].ToString();
                         oJE.Lines.Reference2 = p["Ref2"].ToString();
                         oJE.Lines.Add();
 
                         oJE.Lines.AccountCode = contaJurosApropriar;
+                        oJE.Lines.BPLID = bplId; // <-- INJETADO
                         oJE.Lines.Credit = valorJuros;
                         oJE.Lines.Reference1 = p["Ref1"].ToString();
                         oJE.Lines.Reference2 = p["Ref2"].ToString();
@@ -310,13 +311,15 @@ namespace TreasurePlus.Business
                     if (multa > 0)
                     {
                         if (temLinhaNoLCM) oJE.Lines.Add();
-                        oJE.Lines.AccountCode = contaDespesasJuros;
+                        oJE.Lines.AccountCode = contaMulta; // <-- USANDO A CONTA DE MULTA CORRETA AQUI!
+                        oJE.Lines.BPLID = bplId;            // <-- INJETADO
                         oJE.Lines.Debit = multa;
                         oJE.Lines.Reference1 = p["Ref1"].ToString();
                         oJE.Lines.Reference2 = p["Ref2"].ToString();
                         oJE.Lines.Add();
 
                         oJE.Lines.ShortName = credorCode; // Crédito no fornecedor (Aumenta o que devemos)
+                        oJE.Lines.BPLID = bplId;          // <-- INJETADO
                         oJE.Lines.Credit = multa;
                         oJE.Lines.Reference1 = p["Ref1"].ToString();
                         oJE.Lines.Reference2 = p["Ref2"].ToString();
@@ -328,12 +331,14 @@ namespace TreasurePlus.Business
                     {
                         if (temLinhaNoLCM) oJE.Lines.Add();
                         oJE.Lines.ShortName = credorCode; // Débito no fornecedor (Reduz o que devemos)
+                        oJE.Lines.BPLID = bplId;          // <-- INJETADO
                         oJE.Lines.Debit = desconto;
                         oJE.Lines.Reference1 = p["Ref1"].ToString();
                         oJE.Lines.Reference2 = p["Ref2"].ToString();
                         oJE.Lines.Add();
 
                         oJE.Lines.AccountCode = contaDespesasJuros;
+                        oJE.Lines.BPLID = bplId;          // <-- INJETADO
                         oJE.Lines.Credit = desconto;
                         oJE.Lines.Reference1 = p["Ref1"].ToString();
                         oJE.Lines.Reference2 = p["Ref2"].ToString();
@@ -358,6 +363,7 @@ namespace TreasurePlus.Business
                 // 2. GERAR O PAGAMENTO (LIQUIDANDO AS DÍVIDAS E AS MULTAS JUNTAS)
                 // =================================================================
                 oPayment.DocType = SAPbobsCOM.BoRcptTypes.rSupplier;
+                oPayment.BPLID = bplId; // <-- INJETADO: Garante que o Contas a Pagar nasça na filial do contrato
                 oPayment.CardCode = credorCode;
                 oPayment.DocDate = dataPagamento;
                 oPayment.TaxDate = dataPagamento;
@@ -424,25 +430,22 @@ namespace TreasurePlus.Business
 
                 if (oPayment.Add() != 0) throw new Exception("Erro no Pagamento: " + oCompany.GetLastErrorDescription());
                 int idPagamentoGerado = Convert.ToInt32(oCompany.GetNewObjectKey());
+
                 // =================================================================
                 // 3. ATUALIZAR A TABELA DO ADD-ON VIA UDO
                 // =================================================================
 
-                // Não precisamos mais fazer SELECT para achar o DocEntry, ele já foi passado por parâmetro!
                 if (docEntryContrato > 0)
                 {
-                    // 3.2 Prepara os serviços do UDO
                     SAPbobsCOM.CompanyService oCompService = oCompany.GetCompanyService();
                     SAPbobsCOM.GeneralService oGeneralService = oCompService.GetGeneralService("TP_LOAN");
                     SAPbobsCOM.GeneralDataParams oGeneralParams = (SAPbobsCOM.GeneralDataParams)oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralDataParams);
 
-                    // 3.3 Carrega o Objeto do Contrato para a memória
-                    oGeneralParams.SetProperty("DocEntry", docEntryContrato); // USA A VARIÁVEL DIRETO!
+                    oGeneralParams.SetProperty("DocEntry", docEntryContrato);
 
                     SAPbobsCOM.GeneralData oGeneralData = oGeneralService.GetByParams(oGeneralParams);
                     SAPbobsCOM.GeneralDataCollection oChildren = oGeneralData.Child("TP_LOAN_LINES");
 
-                    // 3.4 Percorre as parcelas baixadas e encontra a linha correspondente no UDO
                     foreach (var p in parcelasParaBaixar)
                     {
                         string numParcelaBaixada = p["Ref2"].ToString();
@@ -452,7 +455,6 @@ namespace TreasurePlus.Business
                             SAPbobsCOM.GeneralData oChild = oChildren.Item(i);
                             string instNumDaLinha = oChild.GetProperty("U_InstNum").ToString();
 
-                            // Achou a linha exata da parcela!
                             if (instNumDaLinha == numParcelaBaixada)
                             {
                                 oChild.SetProperty("U_Status", "P");
@@ -466,7 +468,6 @@ namespace TreasurePlus.Business
                         }
                     }
 
-                    // 3.5 Grava o UDO de volta na base de dados
                     oGeneralService.Update(oGeneralData);
                 }
 

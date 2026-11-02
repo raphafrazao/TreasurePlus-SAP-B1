@@ -70,7 +70,8 @@ namespace TreasurePlus
             this.EditText5 = ((SAPbouiCOM.EditText)(this.GetItem("txtDataPgt").Specific));
             this.Button1 = ((SAPbouiCOM.Button)(this.GetItem("btnBaixar").Specific));
             this.Button1.ClickBefore += new SAPbouiCOM._IButtonEvents_ClickBeforeEventHandler(this.Button1_ClickBefore);
-            this.ComboBox0 = ((SAPbouiCOM.ComboBox)(this.GetItem("Item_4").Specific));
+            this.StaticText5 = ((SAPbouiCOM.StaticText)(this.GetItem("Item_5").Specific));
+            this.EditText6 = ((SAPbouiCOM.EditText)(this.GetItem("filial").Specific));
             this.OnCustomInitialize();
 
         }
@@ -119,39 +120,68 @@ namespace TreasurePlus
 
             try
             {
-                // 1. Resgata os valores brutos da lupa (Tabela @TP_LOAN)
+                // 1. Resgata APENAS os valores brutos que temos certeza que a Lupa devolve
                 var contrato = oDataTable.GetValue("U_NumContrato", 0).ToString();
                 var codePN = oDataTable.GetValue("U_CreditorNumber", 0).ToString();
                 var docEntry = oDataTable.GetValue("DocEntry", 0).ToString();
 
-                _docEntry = oDataTable.GetValue("DocEntry", 0).ToString();
+                _docEntry = docEntry;
 
-                // O Status nativo do SAP (bboObject) geralmente retorna "O" (Open/1) ou "C" (Closed/2)
+                // O Status nativo do SAP
                 var statusCode = oDataTable.GetValue("Status", 0).ToString();
 
-                // 2. Tradução do Status para o ecrã
+                // 2. Tradução do Status para a tela
                 string statusDescricao = "";
-                if (statusCode == "1" || statusCode == "O") // "O" de Open ou 1 dependendo da versão
+                if (statusCode == "1" || statusCode == "O")
                     statusDescricao = "Aberto";
-                else if (statusCode == "2" || statusCode == "C") // "C" de Closed ou 2
+                else if (statusCode == "2" || statusCode == "C")
                     statusDescricao = "Fechado";
                 else if (statusCode == "3" || statusCode == "C") // Cancelado
                     statusDescricao = "Cancelado";
                 else
-                    statusDescricao = statusCode; // fallback caso seja outro
+                    statusDescricao = statusCode;
 
-               
-                // 3. Busca o Nome do Parceiro de Negócios (OCRD) usando o DI API (Recordset)
+                // 3. Busca Segura no Banco de Dados (BPLId e Nomes)
                 string nomePN = "";
+                string bplId = "";
+                string nomeBPL = "";
 
-                SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
+                SAPbobsCOM.Company oCompany = this.ConexaoSAP;
                 SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
 
-                
+                // A. Buscar o BPLId direto do contrato usando o DocEntry
+                string queryContrato = oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB
+                    ? $"SELECT \"U_BPLId\" FROM \"@TP_LOAN\" WHERE \"DocEntry\" = {docEntry}"
+                    : $"SELECT U_BPLId FROM [@TP_LOAN] WHERE DocEntry = {docEntry}";
 
+                oRec.DoQuery(queryContrato);
+                if (oRec.RecordCount > 0)
+                {
+                    bplId = oRec.Fields.Item("U_BPLId").Value.ToString();
+                }
+
+                // B. Buscar o Nome da Filial
+                if (!string.IsNullOrEmpty(bplId))
+                {
+                    string queryFilial = oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB
+                        ? $"SELECT \"BPLName\" FROM \"OBPL\" WHERE \"BPLId\" = '{bplId}'"
+                        : $"SELECT BPLName FROM OBPL WHERE BPLId = '{bplId}'";
+
+                    oRec.DoQuery(queryFilial);
+                    if (oRec.RecordCount > 0)
+                    {
+                        nomeBPL = oRec.Fields.Item("BPLName").Value.ToString();
+                    }
+                }
+
+                // C. Busca o Nome do Parceiro de Negócios
                 if (!string.IsNullOrEmpty(codePN))
                 {
-                    oRec.DoQuery($"SELECT CardName FROM OCRD WHERE CardCode = '{codePN}'");
+                    string queryPN = oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB
+                        ? $"SELECT \"CardName\" FROM \"OCRD\" WHERE \"CardCode\" = '{codePN}'"
+                        : $"SELECT CardName FROM OCRD WHERE CardCode = '{codePN}'";
+
+                    oRec.DoQuery(queryPN);
                     if (oRec.RecordCount > 0)
                     {
                         nomePN = oRec.Fields.Item("CardName").Value.ToString();
@@ -161,15 +191,13 @@ namespace TreasurePlus
                 // 4. Preenche a tela (User Data Sources)
                 this.UIAPIRawForm.DataSources.UserDataSources.Item("udsContr").ValueEx = contrato;
                 this.UIAPIRawForm.DataSources.UserDataSources.Item("udsCredor").ValueEx = codePN;
-                this.UIAPIRawForm.DataSources.UserDataSources.Item("udsStatus").ValueEx = statusDescricao; // Passamos o traduzido
+                this.UIAPIRawForm.DataSources.UserDataSources.Item("udsStatus").ValueEx = statusDescricao;
                 this.UIAPIRawForm.DataSources.UserDataSources.Item("udsNome").ValueEx = nomePN;
 
+                this.UIAPIRawForm.DataSources.UserDataSources.Item("udFilial").ValueEx = bplId;
+                this.UIAPIRawForm.DataSources.UserDataSources.Item("udNFilial").ValueEx = nomeBPL;
 
-                // Exemplo: Se tiver criado o UDS para o nome do fornecedor:
-                // this.UIAPIRawForm.DataSources.UserDataSources.Item("udsNomePN").ValueEx = nomePN;
-
-                // DICA: Aqui será o lugar perfeito para chamarmos a função que carrega a Grid de Parcelas!
-                // Chama a nossa nova função passando a chave primária!
+                // Chama a nossa função passando a chave primária
                 CarregarParcelas(docEntry);
             }
             catch (Exception ex)
@@ -177,7 +205,6 @@ namespace TreasurePlus
                 Application.SBO_Application.MessageBox("Erro ao selecionar contrato: " + ex.Message, 1, "Ok", "", "");
             }
         }
-
 
 
 
@@ -601,20 +628,19 @@ namespace TreasurePlus
 
                 string credorPN = ((SAPbouiCOM.EditText)this.GetItem("CodePN").Specific).Value.Trim();
 
-               SAPbobsCOM.Company oCompany = this.ConexaoSAP; // <-- SÓ ISSO!
+                SAPbobsCOM.Company oCompany = this.ConexaoSAP;
                 SAPbobsCOM.Recordset oRec = (SAPbobsCOM.Recordset)oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
-                // NOVA QUERY SUPER RÁPIDA: Buscando por DocEntry (Chave Primária) em vez do U_NumContrato
+
+                // --- MUDANÇA 1: QUERY ATUALIZADA COM BPLId E PenaltyAcc ---
                 string queryContas = "";
 
                 if (oCompany.DbServerType == SAPbobsCOM.BoDataServerTypes.dst_HANADB)
                 {
-                    // HANA: Aspas duplas nas colunas e na tabela
-                    queryContas = $"SELECT \"U_BankAcc\", \"U_IntExpAcc\", \"U_SIntAcc\" FROM \"@TP_LOAN\" WHERE \"DocEntry\" = {_docEntry}";
+                    queryContas = $"SELECT \"U_BankAcc\", \"U_IntExpAcc\", \"U_SIntAcc\", \"U_BPLId\", \"U_PenaltyAcc\" FROM \"@TP_LOAN\" WHERE \"DocEntry\" = {_docEntry}";
                 }
                 else
                 {
-                    // SQL SERVER: Colchetes apenas na tabela com @
-                    queryContas = $"SELECT U_BankAcc, U_IntExpAcc, U_SIntAcc FROM [@TP_LOAN] WHERE DocEntry = {_docEntry}";
+                    queryContas = $"SELECT U_BankAcc, U_IntExpAcc, U_SIntAcc, U_BPLId, U_PenaltyAcc FROM [@TP_LOAN] WHERE DocEntry = {_docEntry}";
                 }
 
                 oRec.DoQuery(queryContas);
@@ -625,21 +651,31 @@ namespace TreasurePlus
                 string contaDespesaJuros = oRec.Fields.Item("U_IntExpAcc").Value.ToString();
                 string contaJurosApropriar = oRec.Fields.Item("U_SIntAcc").Value.ToString();
 
-                // 4. CHAMAR A CLASSE DE NEGÓCIOS ATUALIZADA (Passando o _docEntry também!)
+                // --- MUDANÇA 2: LENDO OS VALORES NOVOS DO BANCO ---
+                int bplIdDaBaixa = Convert.ToInt32(oRec.Fields.Item("U_BPLId").Value);
+                string contaMulta = oRec.Fields.Item("U_PenaltyAcc").Value.ToString();
+
+                // 4. CHAMAR A CLASSE DE NEGÓCIOS ATUALIZADA
                 TreasurePlus.Business.ContratoBusiness negocio = new TreasurePlus.Business.ContratoBusiness();
 
-                // Nota: Teremos de alterar a assinatura da função na classe de negócios para receber o docEntry
-                int idPagamento = negocio.EfetuarBaixaParcelas(Convert.ToInt32(_docEntry), credorPN, contaBancaria, contaDespesaJuros, contaJurosApropriar, dataPgto, parcelas);
+                // --- MUDANÇA 3: PASSANDO OS DOIS NOVOS PARÂMETROS ---
+                int idPagamento = negocio.EfetuarBaixaParcelas(
+                    Convert.ToInt32(_docEntry),
+                    credorPN,
+                    contaBancaria,
+                    contaDespesaJuros,
+                    contaJurosApropriar,
+                    dataPgto,
+                    parcelas,
+                    bplIdDaBaixa,  // <-- Injetado direto do banco
+                    contaMulta     // <-- Injetado direto do banco
+                );
 
                 // 5. Sucesso e Limpeza da Tela
                 Application.SBO_Application.MessageBox($"Baixa efetuada com sucesso! Pagamento Nº: {idPagamento}", 1, "Ok", "", "");
 
                 // CORREÇÃO DO FOCO: Joga o cursor para o campo "NumContr" (que nunca é escondido)
                 this.EditText0.Item.Click();
-
-               
-                // 5. Sucesso e Limpeza da Tela
-                Application.SBO_Application.MessageBox($"Baixa efetuada com sucesso! Pagamento Nº: {idPagamento}", 1, "Ok", "", "");
 
                 // CORREÇÃO: Recarrega as parcelas do banco de dados (Grid de cima)
                 CarregarParcelas(_docEntry);
@@ -662,6 +698,7 @@ namespace TreasurePlus
 
         }
 
-        private SAPbouiCOM.ComboBox ComboBox0;
+        private SAPbouiCOM.StaticText StaticText5;
+        private SAPbouiCOM.EditText EditText6;
     }
 }
